@@ -60,41 +60,51 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const preference = await new Preference(mpConfig).create({
-    body: {
-      items: lineItems.map(({ product, quantity }) => ({
-        id: product.id,
-        title: product.name,
-        quantity,
-        currency_id: "MXN",
-        unit_price: product.priceCents / 100,
-      })),
-      external_reference: order.id,
-      back_urls: {
-        success: `${origin}/pedido/exito`,
-        pending: `${origin}/pedido/pendiente`,
-        failure: `${origin}/pedido/cancelado`,
+  try {
+    const preference = await new Preference(mpConfig).create({
+      body: {
+        items: lineItems.map(({ product, quantity }) => ({
+          id: product.id,
+          title: product.name,
+          quantity,
+          currency_id: "MXN",
+          unit_price: product.priceCents / 100,
+        })),
+        external_reference: order.id,
+        back_urls: {
+          success: `${origin}/pedido/exito`,
+          pending: `${origin}/pedido/pendiente`,
+          failure: `${origin}/pedido/cancelado`,
+        },
+        auto_return: "approved",
+        notification_url: `${origin}/api/webhooks/mercadopago`,
       },
-      auto_return: "approved",
-      notification_url: `${origin}/api/webhooks/mercadopago`,
-    },
-  });
+    });
 
-  const payUrl = process.env.MERCADOPAGO_ACCESS_TOKEN?.startsWith("TEST-")
-    ? preference.sandbox_init_point
-    : preference.init_point;
+    const payUrl = process.env.MERCADOPAGO_ACCESS_TOKEN?.startsWith("TEST-")
+      ? preference.sandbox_init_point
+      : preference.init_point;
 
-  if (!payUrl) {
+    if (!payUrl) {
+      throw new Error("Mercado Pago no devolvió una URL de pago.");
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { mpPreferenceId: preference.id },
+    });
+
+    return NextResponse.json({ url: payUrl });
+  } catch (err) {
+    // Nothing to charge for if Mercado Pago rejected the request (invalid
+    // credentials, malformed items, etc.) — don't leave an orphaned
+    // "pending" order behind.
+    await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+    const message =
+      err instanceof Error ? err.message : "No se pudo crear la preferencia de pago.";
     return NextResponse.json(
-      { error: "Mercado Pago no devolvió una URL de pago." },
+      { error: `Mercado Pago rechazó la solicitud: ${message}` },
       { status: 502 }
     );
   }
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { mpPreferenceId: preference.id },
-  });
-
-  return NextResponse.json({ url: payUrl });
 }
