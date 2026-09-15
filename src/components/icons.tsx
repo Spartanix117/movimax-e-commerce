@@ -180,6 +180,16 @@ export function MinusIcon({ className }: IconProps) {
   );
 }
 
+export function CardIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="1.5" y="4" width="15" height="10" rx="1.8" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M1.5 7.3h15" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M4 11h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function PlusIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 14 14" fill="none" aria-hidden="true">

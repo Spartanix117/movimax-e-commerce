@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useCart } from "./CartContext";
 import { formatPrice } from "@/lib/format";
 import { STORE_WHATSAPP } from "@/lib/constants";
-import { CloseIcon, MinusIcon, PlusIcon, WhatsAppIcon } from "@/components/icons";
+import { CardIcon, CloseIcon, MinusIcon, PlusIcon, WhatsAppIcon } from "@/components/icons";
 
-function buildWhatsAppOrderUrl(
+function buildWhatsAppQuestionUrl(
   items: { name: string; priceCents: number; quantity: number }[],
   subtotalCents: number
 ) {
@@ -13,7 +14,7 @@ function buildWhatsAppOrderUrl(
     (i) => `• ${i.name} x${i.quantity} — ${formatPrice(i.priceCents * i.quantity)}`
   );
   const message = [
-    "Hola, quiero hacer un pedido en Movimax:",
+    "Hola, tengo una duda sobre mi carrito en Movimax:",
     "",
     ...lines,
     "",
@@ -24,6 +25,30 @@ function buildWhatsAppOrderUrl(
 
 export function CartDrawer() {
   const { items, isOpen, close, removeItem, setQuantity, subtotalCents } = useCart();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePay() {
+    setError(null);
+    setIsRedirecting(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error ?? "No se pudo iniciar el pago.");
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      setError((err as Error).message);
+      setIsRedirecting(false);
+    }
+  }
 
   return (
     <>
@@ -110,21 +135,34 @@ export function CartDrawer() {
               {formatPrice(subtotalCents)}
             </span>
           </div>
+          <button
+            onClick={handlePay}
+            disabled={items.length === 0 || isRedirecting}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-gold-ink transition ${
+              items.length === 0 || isRedirecting
+                ? "pointer-events-none opacity-50"
+                : "hover:brightness-105"
+            }`}
+          >
+            <CardIcon className="h-4 w-4" />
+            {isRedirecting ? "Conectando con Stripe…" : "Pagar con tarjeta o en OXXO"}
+          </button>
+          {error && <p className="mt-2 text-center text-xs text-red-600">{error}</p>}
+          <p className="mt-2 text-center text-xs text-ink-muted">
+            Pago seguro con Stripe. Envío a todo México.
+          </p>
           <a
-            href={items.length > 0 ? buildWhatsAppOrderUrl(items, subtotalCents) : undefined}
+            href={items.length > 0 ? buildWhatsAppQuestionUrl(items, subtotalCents) : undefined}
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={items.length === 0}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl bg-success px-4 py-3 text-sm font-semibold text-white transition ${
-              items.length === 0 ? "pointer-events-none opacity-50" : "hover:brightness-105"
+            className={`mt-3 flex items-center justify-center gap-1.5 text-xs font-medium text-ink-muted hover:text-accent ${
+              items.length === 0 ? "pointer-events-none opacity-50" : ""
             }`}
           >
-            <WhatsAppIcon className="h-4 w-4" />
-            Finalizar pedido por WhatsApp
+            <WhatsAppIcon className="h-3.5 w-3.5" />
+            ¿Dudas sobre tu pedido? Pregúntanos por WhatsApp
           </a>
-          <p className="mt-2 text-center text-xs text-ink-muted">
-            Confirmamos disponibilidad y envío directo por WhatsApp.
-          </p>
         </div>
       </aside>
     </>
