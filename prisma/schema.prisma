@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A department of the store. Some categories exist in the schema before
+// they have products — e.g. "Celulares" (phone sales stay in-store only
+// for now) and "Impermeabilizantes" (catalog pending) — so the storefront
+// can show them as "Próximamente" instead of needing a migration later.
+model Category {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  comingSoon Boolean   @default(false)
+  products   Product[]
+  createdAt  DateTime  @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  spec        String // short one-line spec shown on the product card
+  priceCents  Int // store money as integer centavos (MXN) to avoid float rounding
+  stock       Int      @default(0)
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

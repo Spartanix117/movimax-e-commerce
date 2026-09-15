@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  /* surfaces that adapt to the viewer's color scheme */
+  --paper: #f6f4ef;
+  --paper-raised: #ffffff;
+  --ink: #1d1730;
+  --ink-muted: #69627e;
+  --line: #e6e1d8;
+  --accent: #4a2a8f;
+  --purple-soft: #efe9f9;
+  --success: #2f7d5c;
+  --success-soft: #e3efe8;
+
+  /* fixed brand chrome — same in light and dark, like the logo itself */
+  --brand: #4a2a8f;
+  --gold: #e8a93d;
+  --gold-ink: #2a1660;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #15101f;
+    --paper-raised: #1e1730;
+    --ink: #ede9f5;
+    --ink-muted: #a79fbd;
+    --line: #332a4a;
+    --accent: #c9aeff;
+    --purple-soft: #241c3b;
+    --success: #4faf85;
+    --success-soft: #152420;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-purple-soft: var(--purple-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+
+  --color-brand: var(--brand);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+
+  --font-display: var(--font-baloo);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  font-family: var(--font-sans);
+}
