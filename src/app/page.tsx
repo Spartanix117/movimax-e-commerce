@@ -7,10 +7,10 @@ import { TrustStrip } from "@/components/TrustStrip";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { ProductGrid } from "@/components/ProductGrid";
 
-// Re-fetch categories/products from the DB at most once a minute instead of
-// baking them into the page at build time — otherwise new products would
-// only show up after a redeploy.
-export const revalidate = 60;
+// Render this page fresh on every request instead of caching it — stock
+// counts and new/removed products should show up immediately, not only
+// after a redeploy or once a cache window expires.
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [categories, featuredProducts] = await Promise.all([

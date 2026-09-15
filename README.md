@@ -6,16 +6,19 @@ Tienda en línea de Movimax. **Catálogo activo: solo movilidad eléctrica**
 de catálogo — ambas categorías ya existen en la base de datos marcadas como
 "Próximamente" para no requerir una migración cuando se activen.
 
-Stack: **Next.js (App Router) + TypeScript + Tailwind CSS + Prisma + SQLite**
-(local; fácil de migrar a Postgres para producción — ver abajo).
+Stack: **Next.js (App Router) + TypeScript + Tailwind CSS + Prisma + Postgres**.
 
 ## Cómo correrlo
 
+Necesitas una base de datos Postgres antes de arrancar — ver
+["Consigue una base de datos"](#1-consigue-una-base-de-datos-gratis) más
+abajo si no tienes una todavía.
+
 ```bash
 npm install
-cp .env.example .env      # trae DATABASE_URL listo; agrega tus credenciales de Mercado Pago (ver abajo)
-npm run db:push           # crea las tablas en la base de datos local (dev.db)
-npm run db:seed           # carga las categorías y los 10 productos de ejemplo
+cp .env.example .env      # pon tu DATABASE_URL real y tus credenciales de Mercado Pago (ver abajo)
+npm run db:push           # crea las tablas en tu base de datos
+npm run db:seed           # carga las categorías y los productos
 npm run dev                # http://localhost:3000
 ```
 
@@ -26,6 +29,53 @@ npm run db:studio   # interfaz visual para ver/editar la base de datos
 npm run lint         # revisa el código con ESLint
 npm run build        # build de producción (valida tipos también)
 ```
+
+## Publicar el sitio (para que cualquiera lo vea, no solo tú)
+
+Ahora mismo el proyecto solo existe en tu computadora. Publicarlo significa
+dos cosas: una base de datos real en internet, y un lugar donde el código
+corra 24/7. Los dos tienen plan gratuito y no piden tarjeta para empezar.
+
+### 1. Consigue una base de datos gratis
+
+1. Entra a [neon.tech](https://neon.tech) y crea una cuenta gratis.
+2. Crea un proyecto nuevo (te va a pedir un nombre — "movimax" está bien).
+3. En el dashboard del proyecto, busca el botón de **"Connection string"** y
+   cópialo completo — se ve algo así:
+   `postgresql://usuario:contraseña@algo.neon.tech/neondb?sslmode=require`
+4. Pégalo como `DATABASE_URL` en tu `.env` (reemplazando la línea de
+   `file:./dev.db` que ya no aplica).
+5. Corre `npm run db:push` y `npm run db:seed` otra vez — esta vez crean las
+   tablas y cargan los productos en la base de datos real, no en tu
+   computadora.
+
+### 2. Publica el código en Vercel
+
+1. Entra a [vercel.com](https://vercel.com) y crea una cuenta — usa el botón
+   de **"Continue with GitHub"** para conectarla directo a tu cuenta de
+   GitHub (así no manejas otra contraseña).
+2. Dale **"Add New" → "Project"**, y selecciona el repositorio
+   `movimax-e-commerce`.
+3. En "Configure Project", asegúrate de que la rama a desplegar sea
+   `claude/proyecto-anterior-ay3mbf` (o la que estés usando).
+4. Antes de darle "Deploy", abre la sección **"Environment Variables"** y
+   agrega, una por una, las mismas que tienes en tu `.env`:
+   - `DATABASE_URL`
+   - `MERCADOPAGO_ACCESS_TOKEN`
+   - `MERCADOPAGO_WEBHOOK_SECRET`
+5. Dale **"Deploy"**. Tarda uno o dos minutos.
+
+Al terminar te da una URL pública (algo como
+`https://movimax-e-commerce.vercel.app`) — esa ya la puede abrir cualquiera,
+desde cualquier celular, y va a mostrar el catálogo real con las unidades
+disponibles de verdad (lee la misma base de datos que ves con
+`npm run db:studio`).
+
+### 3. Cada vez que hagas un cambio
+
+Con Vercel conectado a GitHub, no hay que repetir estos pasos — cada vez que
+subas cambios a la rama conectada (`git push`), Vercel los detecta solo y
+actualiza el sitio publicado en un par de minutos.
 
 ## Pagos con Mercado Pago (tarjeta + OXXO)
 
@@ -154,11 +204,16 @@ src/
   crear la sesión de pago (`/api/checkout`), nunca se confía en el precio
   que mande el navegador — evita que alguien manipule el precio antes de
   pagar.
-- **SQLite en desarrollo.** Es cero configuración para correr el proyecto
-  localmente. Para producción, cambiar el `provider` en
-  `prisma/schema.prisma` a `"postgresql"` y `DATABASE_URL` a la conexión de
-  Postgres (Vercel Postgres, Neon, Railway, etc.) — el resto del código no
-  cambia.
+- **Postgres desde el inicio** (no SQLite). Al principio corría en SQLite
+  (un archivo local, cero configuración) porque era más rápido para probar
+  el proyecto contigo — pero como SQLite es literal un archivo en disco, no
+  sirve una vez que el sitio se publica en Vercel (no hay disco persistente
+  entre despliegues). Se cambió a Postgres (gratis en Neon) para que la
+  misma base de datos sirva en desarrollo y en producción sin sorpresas.
+- **La página principal se renderiza en cada visita** (`dynamic =
+  "force-dynamic"` en `page.tsx`), no se cachea — para que el stock
+  ("unidades disponibles") que ve el cliente sea siempre el real, nunca uno
+  desactualizado por unos minutos.
 - **Prisma se fijó en la versión 6** (no la más nueva) porque la versión 7
   cambió su forma de configurarse de una manera que todavía no está bien
   documentada/estabilizada; la v6 es la que coincide con casi toda la
