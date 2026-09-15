@@ -145,11 +145,11 @@ export function CartDrawer() {
             }`}
           >
             <CardIcon className="h-4 w-4" />
-            {isRedirecting ? "Conectando con Stripe…" : "Pagar con tarjeta o en OXXO"}
+            {isRedirecting ? "Conectando con Mercado Pago…" : "Pagar con tarjeta o en OXXO"}
           </button>
           {error && <p className="mt-2 text-center text-xs text-red-600">{error}</p>}
           <p className="mt-2 text-center text-xs text-ink-muted">
-            Pago seguro con Stripe. Envío a todo México.
+            Pago seguro con Mercado Pago. Envío a todo México.
           </p>
           <a
             href={items.length > 0 ? buildWhatsAppQuestionUrl(items, subtotalCents) : undefined}

@@ -37,20 +37,20 @@ model Product {
 }
 
 // One checkout attempt. Created as "pending" the moment we redirect the
-// customer to Stripe, then flipped to "paid"/"failed" by the webhook —
-// never by the success-page redirect, since OXXO vouchers are paid days
+// customer to Mercado Pago, then flipped to "paid"/"failed" by the webhook —
+// never by the success-page redirect, since an OXXO ticket is paid days
 // later at a physical store, not at checkout time.
 model Order {
-  id                      String      @id @default(cuid())
-  status                  String      @default("pending") // pending | paid | failed | canceled
-  stripeCheckoutSessionId String      @unique
-  stripePaymentIntentId   String?
-  paymentMethod           String? // "card" | "oxxo", filled in once Stripe reports it
-  customerEmail           String?
-  totalCents              Int
-  items                   OrderItem[]
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
+  id             String      @id @default(cuid())
+  status         String      @default("pending") // pending | paid | failed | canceled
+  mpPreferenceId String?     @unique // filled in right after creation, once Mercado Pago responds
+  mpPaymentId    String?
+  paymentMethod  String? // e.g. "credit_card" / "debit_card" / "ticket" (OXXO), from Mercado Pago's payment_type_id
+  customerEmail  String?
+  totalCents     Int
+  items          OrderItem[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 // Snapshot of a product at the moment of purchase — kept even if the
