@@ -14,8 +14,8 @@ export function Hero() {
             Muévete por la ciudad, <em className="not-italic text-accent">sobre ruedas eléctricas</em>.
           </h1>
           <p className="mt-4 max-w-[52ch] text-lg leading-relaxed text-ink-muted">
-            Patines y bicicletas eléctricas, cascos y repuestos — con envío a toda la República
-            y atención directa por WhatsApp.
+            Patines y bicicletas eléctricas — con envío a toda la República y atención directa
+            por WhatsApp.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -46,7 +46,7 @@ export function Hero() {
             <br />a tu alcance.
           </h2>
           <p className="mt-2 text-sm text-[#D2C4EC]">
-            Patines, bicicletas y repuestos listos para enviarse hoy.
+            Patines y bicicletas listos para enviarse hoy.
           </p>
         </div>
       </div>

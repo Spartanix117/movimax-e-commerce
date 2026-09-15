@@ -2,7 +2,25 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Slugs Movimax no longer carries — removed here instead of just deleted
+// from the arrays below, so a DB seeded before this change gets cleaned up
+// too, not just one seeded fresh.
+const RETIRED_PRODUCT_SLUGS = [
+  "casco-seguridad-luz-led",
+  "set-rodilleras-coderas",
+  "chaleco-reflectante-movimax",
+  "cargador-universal-patin-electrico",
+  "camara-repuesto-rin-8-5",
+  "candado-plegable-antirrobo",
+];
+const RETIRED_CATEGORY_SLUGS = ["cascos-y-seguridad", "repuestos-y-accesorios"];
+
 async function main() {
+  // Products first — a category can't be deleted while products still
+  // reference it.
+  await prisma.product.deleteMany({ where: { slug: { in: RETIRED_PRODUCT_SLUGS } } });
+  await prisma.category.deleteMany({ where: { slug: { in: RETIRED_CATEGORY_SLUGS } } });
+
   // "Celulares" stays in-schema but empty: phones are only sold in the
   // physical stores for now, not through this catalog.
   const celulares = await prisma.category.upsert({
@@ -33,18 +51,6 @@ async function main() {
     where: { slug: "bicicletas-electricas" },
     update: {},
     create: { name: "Bicicletas eléctricas", slug: "bicicletas-electricas" },
-  });
-
-  const seguridad = await prisma.category.upsert({
-    where: { slug: "cascos-y-seguridad" },
-    update: {},
-    create: { name: "Cascos y seguridad", slug: "cascos-y-seguridad" },
-  });
-
-  const repuestos = await prisma.category.upsert({
-    where: { slug: "repuestos-y-accesorios" },
-    update: {},
-    create: { name: "Repuestos y accesorios", slug: "repuestos-y-accesorios" },
   });
 
   const products = [
@@ -88,66 +94,6 @@ async function main() {
       stock: 6,
       categoryId: bicicletas.id,
     },
-    {
-      name: "Casco de seguridad con luz LED",
-      slug: "casco-seguridad-luz-led",
-      description:
-        "Casco certificado con luz trasera LED recargable para mayor visibilidad nocturna.",
-      spec: "Certificado · ajuste regulable · luz LED recargable",
-      priceCents: 45900,
-      stock: 20,
-      categoryId: seguridad.id,
-    },
-    {
-      name: "Set de rodilleras y coderas",
-      slug: "set-rodilleras-coderas",
-      description:
-        "Protección básica para trayectos en patín o bicicleta eléctrica, ajuste con velcro.",
-      spec: "Talla ajustable · espuma de alta densidad",
-      priceCents: 34900,
-      stock: 15,
-      categoryId: seguridad.id,
-    },
-    {
-      name: "Chaleco reflectante Movimax",
-      slug: "chaleco-reflectante-movimax",
-      description:
-        "Chaleco reflectante ligero para mayor visibilidad al circular de noche.",
-      spec: "Talla única ajustable · alta reflectividad",
-      priceCents: 15900,
-      stock: 25,
-      categoryId: seguridad.id,
-    },
-    {
-      name: "Cargador universal para patín eléctrico",
-      slug: "cargador-universal-patin-electrico",
-      description:
-        "Cargador de reemplazo compatible con la mayoría de patines eléctricos Movimax.",
-      spec: "Entrada 100-240V · conector universal",
-      priceCents: 39900,
-      stock: 12,
-      categoryId: repuestos.id,
-    },
-    {
-      name: "Cámara de repuesto rin 8.5\"",
-      slug: "camara-repuesto-rin-8-5",
-      description:
-        "Cámara de aire de repuesto para patines eléctricos con rin de 8.5 pulgadas.",
-      spec: "Rin 8.5\" · válvula recta",
-      priceCents: 12900,
-      stock: 30,
-      categoryId: repuestos.id,
-    },
-    {
-      name: "Candado plegable antirrobo",
-      slug: "candado-plegable-antirrobo",
-      description:
-        "Candado plegable de acero endurecido para asegurar tu patín o bicicleta eléctrica.",
-      spec: "Acero endurecido · incluye soporte de montaje",
-      priceCents: 29900,
-      stock: 18,
-      categoryId: repuestos.id,
-    },
   ];
 
   for (const product of products) {
@@ -159,7 +105,7 @@ async function main() {
   }
 
   console.log(
-    `Seed listo: ${products.length} productos en ${[patines, bicicletas, seguridad, repuestos].length} categorías activas. "${celulares.name}" e "${impermeabilizantes.name}" quedaron marcadas como próximamente.`
+    `Seed listo: ${products.length} productos en ${[patines, bicicletas].length} categorías activas. "${celulares.name}" e "${impermeabilizantes.name}" quedaron marcadas como próximamente.`
   );
 }
 

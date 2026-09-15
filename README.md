@@ -1,7 +1,7 @@
 # Movimax — e-commerce
 
 Tienda en línea de Movimax. **Catálogo activo: solo movilidad eléctrica**
-(patines, bicicletas, cascos y repuestos). Celulares se sigue vendiendo
+(patines y bicicletas eléctricas). Celulares se sigue vendiendo
 únicamente en tienda física por ahora, e Impermeabilizantes está pendiente
 de catálogo — ambas categorías ya existen en la base de datos marcadas como
 "Próximamente" para no requerir una migración cuando se activen.

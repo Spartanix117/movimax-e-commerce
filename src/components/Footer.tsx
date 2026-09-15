@@ -40,8 +40,7 @@ export function Footer() {
           <ul className="flex flex-col gap-2.5 text-sm">
             <li><Link href="/catalogo?categoria=patines-electricos" className="hover:text-gold">Patines eléctricos</Link></li>
             <li><Link href="/catalogo?categoria=bicicletas-electricas" className="hover:text-gold">Bicicletas eléctricas</Link></li>
-            <li><Link href="/catalogo?categoria=cascos-y-seguridad" className="hover:text-gold">Cascos y seguridad</Link></li>
-            <li><Link href="/catalogo?categoria=repuestos-y-accesorios" className="hover:text-gold">Repuestos y accesorios</Link></li>
+            <li><Link href="/catalogo" className="hover:text-gold">Ver todo el catálogo</Link></li>
           </ul>
         </div>
 

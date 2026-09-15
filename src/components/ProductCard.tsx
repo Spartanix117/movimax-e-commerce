@@ -1,18 +1,11 @@
 import type { Category, Product } from "@prisma/client";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { formatPrice } from "@/lib/format";
-import {
-  BikeIcon,
-  HelmetIcon,
-  ScooterIcon,
-  WrenchIcon,
-} from "@/components/icons";
+import { BikeIcon, ScooterIcon } from "@/components/icons";
 
 const MEDIA_ICONS: Record<string, (props: { className?: string }) => React.JSX.Element> = {
   "patines-electricos": ScooterIcon,
   "bicicletas-electricas": BikeIcon,
-  "cascos-y-seguridad": HelmetIcon,
-  "repuestos-y-accesorios": WrenchIcon,
 };
 
 export function ProductCard({

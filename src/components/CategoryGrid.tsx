@@ -1,19 +1,10 @@
 import Link from "next/link";
 import type { Category } from "@prisma/client";
-import {
-  BikeIcon,
-  DropletIcon,
-  HelmetIcon,
-  PhoneIcon,
-  ScooterIcon,
-  WrenchIcon,
-} from "@/components/icons";
+import { BikeIcon, DropletIcon, PhoneIcon, ScooterIcon } from "@/components/icons";
 
 const ICONS: Record<string, (props: { className?: string }) => React.JSX.Element> = {
   "patines-electricos": ScooterIcon,
   "bicicletas-electricas": BikeIcon,
-  "cascos-y-seguridad": HelmetIcon,
-  "repuestos-y-accesorios": WrenchIcon,
   celulares: PhoneIcon,
   impermeabilizantes: DropletIcon,
 };

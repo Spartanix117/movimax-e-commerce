@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Movimax — Celulares y movilidad eléctrica",
   description:
-    "Patines y bicicletas eléctricas, cascos y repuestos, con envío a toda la República y pedidos por WhatsApp.",
+    "Patines y bicicletas eléctricas, con envío a toda la República y pedidos por WhatsApp.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
