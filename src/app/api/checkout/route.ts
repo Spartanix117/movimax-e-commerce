@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Preference } from "mercadopago";
-import { prisma } from "@/lib/prisma";
+import { adminDb } from "@/lib/firebase-admin";
 import { getMercadoPagoConfig } from "@/lib/mercadopago";
+import type { Product } from "@/lib/types";
 
 type CheckoutRequestItem = { productId: string; quantity: number };
 
@@ -13,7 +14,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
-  const body = (await req.json()) as { items?: CheckoutRequestItem[] };
+  let body: { items?: CheckoutRequestItem[] };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "El cuerpo de la solicitud no es JSON válido." }, { status: 400 });
+  }
   const requested = body.items ?? [];
 
   if (requested.length === 0) {
@@ -22,14 +28,23 @@ export async function POST(req: NextRequest) {
 
   // Never trust prices/quantities from the client — look products up by id
   // and price them from the database, same as any real payment integration.
-  const products = await prisma.product.findMany({
-    where: { id: { in: requested.map((i) => i.productId) }, isActive: true },
-  });
+  const productsSnapshot = await adminDb.collection("products").where("isActive", "==", true).get();
+  const products = productsSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Omit<Product, "id">),
+  }));
 
   const lineItems = requested.flatMap((reqItem) => {
+    if (
+      typeof reqItem.productId !== "string" ||
+      !Number.isInteger(reqItem.quantity) ||
+      reqItem.quantity <= 0
+    ) {
+      return [];
+    }
     const product = products.find((p) => p.id === reqItem.productId);
-    if (!product || reqItem.quantity <= 0) return [];
-    const quantity = Math.min(reqItem.quantity, product.stock || reqItem.quantity);
+    if (!product || product.stock <= 0) return [];
+    const quantity = Math.min(reqItem.quantity, product.stock);
     return [{ product, quantity }];
   });
 
@@ -45,19 +60,15 @@ export async function POST(req: NextRequest) {
 
   // Recorded as "pending" now — the webhook is what actually confirms
   // payment, especially for an OXXO ticket that can be paid days later.
-  const order = await prisma.order.create({
-    data: {
-      status: "pending",
-      totalCents,
-      items: {
-        create: lineItems.map(({ product, quantity }) => ({
-          productId: product.id,
-          name: product.name,
-          priceCents: product.priceCents,
-          quantity,
-        })),
-      },
-    },
+  const order = await adminDb.collection("orders").add({
+    status: "pending",
+    totalCents,
+    items: lineItems.map(({ product, quantity }) => ({
+      productId: product.id,
+      name: product.name,
+      priceCents: product.priceCents,
+      quantity,
+    })),
   });
 
   try {
@@ -89,9 +100,8 @@ export async function POST(req: NextRequest) {
       throw new Error("Mercado Pago no devolvió una URL de pago.");
     }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { mpPreferenceId: preference.id },
+    await order.update({
+      mpPreferenceId: preference.id,
     });
 
     return NextResponse.json({ url: payUrl });
@@ -99,7 +109,7 @@ export async function POST(req: NextRequest) {
     // Nothing to charge for if Mercado Pago rejected the request (invalid
     // credentials, malformed items, etc.) — don't leave an orphaned
     // "pending" order behind.
-    await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+    await order.delete().catch(() => {});
     const message =
       err instanceof Error ? err.message : "No se pudo crear la preferencia de pago.";
     return NextResponse.json(

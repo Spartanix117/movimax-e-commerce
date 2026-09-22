@@ -29,7 +29,7 @@ export function Footer() {
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-gold-ink"
           >
             <WhatsAppIcon className="h-3.5 w-3.5" />
-            +52 33 1234 5678
+            +52 449 301 7189
           </a>
         </div>
 
@@ -59,8 +59,8 @@ export function Footer() {
           <h4 className="mb-3.5 text-xs font-bold uppercase tracking-wider text-gold">Horario</h4>
           <ul className="flex flex-col gap-2.5 text-sm">
             <li>Lun – Vie · 10:00–20:00</li>
-            <li>Sábado · 10:00–17:00</li>
-            <li>Domingo · Cerrado</li>
+            <li>Sábado · 10:00–20:00</li>
+            <li>Domingo · 10:00–16:00</li>
           </ul>
         </div>
       </div>

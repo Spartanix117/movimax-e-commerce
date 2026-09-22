@@ -1,7 +1,7 @@
 import { TruckIcon, ShieldIcon, WhatsAppIcon, BoxIcon } from "@/components/icons";
 
 const ITEMS = [
-  { icon: TruckIcon, label: "Envíos", detail: "a toda la República" },
+  { icon: TruckIcon, label: "Envíos", detail: "a domicilio" },
   { icon: ShieldIcon, label: "Garantía", detail: "de 30 días" },
   { icon: WhatsAppIcon, label: "Pedidos", detail: "por WhatsApp" },
   { icon: BoxIcon, label: "Pago", detail: "contra entrega disponible" },

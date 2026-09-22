@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { formatPrice } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { adminDb } from "@/lib/firebase-admin";
 
 export default async function PedidoExitoPage({
   searchParams,
@@ -11,9 +11,10 @@ export default async function PedidoExitoPage({
 }) {
   const { external_reference } = await searchParams;
 
-  const order = external_reference
-    ? await prisma.order.findUnique({ where: { id: external_reference } })
+  const orderSnap = external_reference
+    ? await adminDb.collection("orders").doc(external_reference).get()
     : null;
+  const order = orderSnap?.exists ? (orderSnap.data() as { totalCents: number }) : null;
 
   return (
     <>

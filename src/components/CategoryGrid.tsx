@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Category } from "@prisma/client";
+import type { Category } from "@/lib/types";
 import {
   BikeIcon,
   DropletIcon,
