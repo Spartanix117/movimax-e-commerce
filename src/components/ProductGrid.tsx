@@ -1,10 +1,10 @@
-import type { Category, Product } from "@prisma/client";
+import type { ProductWithCategory } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 
 export function ProductGrid({
   products,
 }: {
-  products: (Product & { category: Category })[];
+  products: ProductWithCategory[];
 }) {
   if (products.length === 0) {
     return (

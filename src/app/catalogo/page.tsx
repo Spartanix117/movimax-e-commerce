@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductGrid } from "@/components/ProductGrid";
+import type { Category, Product, ProductWithCategory } from "@/lib/types";
 
 export default async function CatalogoPage({
   searchParams,
@@ -11,22 +12,26 @@ export default async function CatalogoPage({
 }) {
   const { categoria } = await searchParams;
 
-  const [categories, products] = await Promise.all([
-    prisma.category.findMany({
-      where: { comingSoon: false },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.product.findMany({
-      where: {
-        isActive: true,
-        ...(categoria ? { category: { slug: categoria } } : {}),
-      },
-      include: { category: true },
-      orderBy: { createdAt: "asc" },
-    }),
+  const adminDb = getAdminDb();
+  const [categoriesSnap, productsSnap] = await Promise.all([
+    adminDb.collection("categories").get(),
+    adminDb.collection("products").where("isActive", "==", true).get(),
   ]);
 
+  // Filtering "coming soon" in memory avoids a composite index (where + orderBy
+  // on different fields) and keeps categories that lack the comingSoon field.
+  const categories: Category[] = categoriesSnap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as Omit<Category, "id">) }))
+    .filter((c) => !c.comingSoon);
+
+  const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
   const activeCategory = categories.find((c) => c.slug === categoria);
+
+  const products: ProductWithCategory[] = productsSnap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as Omit<Product, "id">) }))
+    .filter((p) => categoriesById[p.categoryId])
+    .filter((p) => !activeCategory || p.categoryId === activeCategory.id)
+    .map((p) => ({ ...p, category: categoriesById[p.categoryId] }));
 
   return (
     <>

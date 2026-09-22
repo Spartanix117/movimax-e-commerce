@@ -1,4 +1,4 @@
-import type { Category, Product } from "@prisma/client";
+import type { ProductWithCategory } from "@/lib/types";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { formatPrice } from "@/lib/format";
 import { BikeIcon, ScooterIcon } from "@/components/icons";
@@ -11,7 +11,7 @@ const MEDIA_ICONS: Record<string, (props: { className?: string }) => React.JSX.E
 export function ProductCard({
   product,
 }: {
-  product: Product & { category: Category };
+  product: ProductWithCategory;
 }) {
   const Icon = MEDIA_ICONS[product.category.slug] ?? ScooterIcon;
   const outOfStock = product.stock <= 0;

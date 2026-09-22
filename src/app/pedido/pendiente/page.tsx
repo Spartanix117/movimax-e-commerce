@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { formatPrice } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { getAdminDb } from "@/lib/firebase-admin";
 
 export default async function PedidoPendientePage({
   searchParams,
@@ -11,9 +11,17 @@ export default async function PedidoPendientePage({
 }) {
   const { external_reference } = await searchParams;
 
-  const order = external_reference
-    ? await prisma.order.findUnique({ where: { id: external_reference } })
-    : null;
+  // Best-effort: this page just confirms a ticket was generated, so a
+  // lookup failure shouldn't stop it from rendering — just skip the total.
+  let order: { totalCents: number } | null = null;
+  try {
+    const orderSnap = external_reference
+      ? await getAdminDb().collection("orders").doc(external_reference).get()
+      : null;
+    order = orderSnap?.exists ? (orderSnap.data() as { totalCents: number }) : null;
+  } catch {
+    order = null;
+  }
 
   return (
     <>

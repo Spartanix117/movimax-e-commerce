@@ -1,33 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Payment, WebhookSignatureValidator } from "mercadopago";
-import { prisma } from "@/lib/prisma";
+import { FieldValue } from "firebase-admin/firestore";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { getMercadoPagoConfig } from "@/lib/mercadopago";
 
 // Marks the order paid exactly once even if Mercado Pago retries the
-// notification — updateMany's count tells us whether *this* call is the
-// one that flipped it, so we only decrement stock a single time per order.
+// notification, so stock is decremented only for the first successful update.
 async function markOrderPaid(orderId: string, mpPaymentId: string, paymentMethod?: string) {
-  const { count } = await prisma.order.updateMany({
-    where: { id: orderId, status: "pending" },
-    data: { status: "paid", mpPaymentId, paymentMethod },
+  const adminDb = getAdminDb();
+  const orderRef = adminDb.collection("orders").doc(orderId);
+  const transitioned = await adminDb.runTransaction(async (transaction) => {
+    const order = await transaction.get(orderRef);
+    if (!order.exists || order.data()?.status === "paid") return false;
+
+    transaction.update(orderRef, {
+      status: "paid",
+      mpPaymentId,
+      paymentMethod
+    });
+    return true;
   });
-  if (count === 0) return;
 
-  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
-  if (!order) return;
+  if (!transitioned) return;
 
-  for (const item of order.items) {
-    await prisma.product.update({
-      where: { id: item.productId },
-      data: { stock: { decrement: item.quantity } },
+  const order = await orderRef.get();
+  if (!order.exists) return;
+  const orderData = order.data();
+  if (!orderData) return;
+
+  for (const item of orderData.items) {
+    await adminDb.collection("products").doc(item.productId).update({
+      stock: FieldValue.increment(-item.quantity)
     });
   }
 }
 
 async function markOrderFailed(orderId: string, mpPaymentId: string) {
-  await prisma.order.updateMany({
-    where: { id: orderId, status: "pending" },
-    data: { status: "failed", mpPaymentId },
+  await getAdminDb().collection("orders").doc(orderId).update({
+    status: "failed",
+    mpPaymentId
   });
 }
 
@@ -43,6 +54,7 @@ export async function POST(req: NextRequest) {
   let mpConfig;
   try {
     mpConfig = getMercadoPagoConfig();
+    getAdminDb();
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
