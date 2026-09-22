@@ -1,7 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Preference } from "mercadopago";
+import { Preference, MercadoPagoError } from "mercadopago";
 import { prisma } from "@/lib/prisma";
 import { getMercadoPagoConfig } from "@/lib/mercadopago";
+
+// The SDK's own error message often falls back to the generic
+// "MercadoPago API error" when the response body carries no `message`/
+// `error` field — but `status` and `causes` (the real per-field validation
+// detail) are still there. Surface those instead of the generic string.
+function describeMercadoPagoError(err: unknown): string {
+  if (err instanceof MercadoPagoError) {
+    const causeText = err.causes
+      .map((c) => (typeof c === "object" && c && "description" in c ? c.description : c))
+      .join("; ");
+    return [
+      `HTTP ${err.status || "?"}`,
+      err.error || err.message,
+      causeText || null,
+    ]
+      .filter(Boolean)
+      .join(" — ");
+  }
+  return err instanceof Error ? err.message : "No se pudo crear la preferencia de pago.";
+}
 
 type CheckoutRequestItem = { productId: string; quantity: number };
 
@@ -100,10 +120,8 @@ export async function POST(req: NextRequest) {
     // credentials, malformed items, etc.) — don't leave an orphaned
     // "pending" order behind.
     await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
-    const message =
-      err instanceof Error ? err.message : "No se pudo crear la preferencia de pago.";
     return NextResponse.json(
-      { error: `Mercado Pago rechazó la solicitud: ${message}` },
+      { error: `Mercado Pago rechazó la solicitud: ${describeMercadoPagoError(err)}` },
       { status: 502 }
     );
   }
