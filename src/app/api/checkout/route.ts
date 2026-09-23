@@ -94,6 +94,12 @@ export async function POST(req: NextRequest) {
   });
 
   try {
+    // Mercado Pago rejects auto_return with invalid_auto_return unless
+    // back_urls.success is a real https URL — which localhost never is.
+    // Skip it for plain http testing (the user lands on Mercado Pago's own
+    // "volver al sitio" screen and clicks back manually); ngrok/production
+    // origins are https, so they keep the automatic redirect.
+    const isHttps = origin.startsWith("https://");
     const preference = await new Preference(mpConfig).create({
       body: {
         items: lineItems.map(({ product, quantity }) => ({
@@ -109,7 +115,7 @@ export async function POST(req: NextRequest) {
           pending: `${origin}/pedido/pendiente`,
           failure: `${origin}/pedido/cancelado`,
         },
-        auto_return: "approved",
+        ...(isHttps ? { auto_return: "approved" as const } : {}),
         notification_url: `${origin}/api/webhooks/mercadopago`,
       },
     });
