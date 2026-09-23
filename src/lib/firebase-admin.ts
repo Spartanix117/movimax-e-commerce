@@ -10,23 +10,40 @@ function loadServiceAccount(): ServiceAccount {
   // its escaped "\n" sequences directly (error-prone in practice).
   const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
   if (base64) {
+    // If this var is set at all, trust it was meant to be used — fail
+    // loudly with the specific reason instead of silently falling through
+    // to the three-separate-vars form below, which would mask a bad
+    // base64 value behind a confusing "Failed to parse private key" from
+    // Firebase instead of pointing at the actual cause.
+    let json: string;
     try {
-      const json = Buffer.from(base64, "base64").toString("utf-8");
-      const parsed = JSON.parse(json) as {
-        project_id?: string;
-        client_email?: string;
-        private_key?: string;
-      };
-      if (parsed.project_id && parsed.client_email && parsed.private_key) {
-        return {
-          projectId: parsed.project_id,
-          clientEmail: parsed.client_email,
-          privateKey: parsed.private_key,
-        };
-      }
+      json = Buffer.from(base64, "base64").toString("utf-8");
     } catch {
-      // fall through to the three-separate-vars form below
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT_BASE64 no se pudo decodificar — probablemente se cortó o se le " +
+          "pegó un salto de línea al copiarlo. Vuelve a generarlo y pégalo completo, en una sola línea."
+      );
     }
+    let parsed: { project_id?: string; client_email?: string; private_key?: string };
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT_BASE64 se decodificó pero no es un JSON válido — probablemente " +
+          "el valor que pegaste en .env está incompleto o le falta texto al final."
+      );
+    }
+    if (!parsed.project_id || !parsed.client_email || !parsed.private_key) {
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT_BASE64 se decodificó pero le faltan campos " +
+          "(project_id/client_email/private_key) — revisa que sea el archivo de la service account completo."
+      );
+    }
+    return {
+      projectId: parsed.project_id,
+      clientEmail: parsed.client_email,
+      privateKey: parsed.private_key,
+    };
   }
 
   // Fallback: three separate env vars, for setups that already have them.
