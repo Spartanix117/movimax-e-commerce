@@ -71,19 +71,36 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 ### 3. Credenciales de administrador (servidor)
 
 En **Configuración del proyecto → Cuentas de servicio → Generar nueva clave
-privada** — descarga un archivo `.json`. **No lo subas al repositorio ni lo
-dejes en `src/secrets/`** aunque esa carpeta esté en `.gitignore`; en vez de
-eso, copia tres campos de ese JSON a tu `.env`:
+privada** — descarga un archivo `.json`. **No lo subas al repositorio**
+(aunque `src/secrets/` esté en `.gitignore`, es más seguro no depender de
+eso). En vez de copiar sus campos a mano — la llave privada es larga y
+fácil de arruinar al pegarla — conviértelo completo a base64 con un solo
+comando y pega **esa única línea** en tu `.env`:
+
+**PowerShell (Windows):**
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("src\secrets\TU-ARCHIVO.json"))
+```
+
+**macOS/Linux:**
+```bash
+base64 -i src/secrets/TU-ARCHIVO.json | tr -d '\n'
+```
+
+Copia lo que imprima (es una sola línea larga, sin saltos) a tu `.env`:
 
 ```
-FIREBASE_PROJECT_ID=el-mismo-project_id-del-json
-FIREBASE_CLIENT_EMAIL=el-client_email-del-json
-FIREBASE_PRIVATE_KEY="el-private_key-del-json-completo-con-BEGIN-y-END"
+FIREBASE_SERVICE_ACCOUNT_BASE64="pega-aquí-el-resultado-completo"
 ```
 
-`FIREBASE_PRIVATE_KEY` es una clave larga de varias líneas — cópiala tal
-cual viene en el JSON (con los `\n` incluidos si así vienen); el código ya
-se encarga de convertirlos a saltos de línea reales.
+Esto evita por completo los problemas de saltos de línea (`\n`) al pegar la
+llave privada a mano — el base64 nunca tiene comillas, saltos de línea ni
+caracteres especiales que un editor de texto pueda arruinar.
+
+> Si prefieres los tres campos por separado (`FIREBASE_PROJECT_ID`,
+> `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) en vez de base64, el
+> código también los acepta como alternativa — pero el base64 es más
+> confiable de copiar sin errores.
 
 Esto es lo mismo que hace que el proyecto funcione tanto en tu computadora
 como una vez publicado en Vercel — un archivo `.json` en disco no
