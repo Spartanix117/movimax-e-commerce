@@ -120,9 +120,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const payUrl = process.env.MERCADOPAGO_ACCESS_TOKEN?.startsWith("TEST-")
-      ? preference.sandbox_init_point
-      : preference.init_point;
+    // Mercado Pago only returns sandbox_init_point when the preference was
+    // created with a test credential — checking that directly is more
+    // reliable than guessing from the access token's prefix, which isn't a
+    // consistent "TEST-" vs "APP_USR-" split across all accounts.
+    const payUrl = preference.sandbox_init_point || preference.init_point;
 
     if (!payUrl) {
       throw new Error("Mercado Pago no devolvió una URL de pago.");
