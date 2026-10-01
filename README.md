@@ -17,7 +17,7 @@ todavía.
 
 ```bash
 npm install
-cp .env.example .env      # pon tus credenciales de Firebase y Mercado Pago (ver abajo)
+cp .env.example .env      # pon tus credenciales de Firebase y Stripe (ver abajo)
 npm run db:seed           # carga las categorías y los productos en Firestore
 npm run dev                # http://localhost:3000
 ```
@@ -121,82 +121,12 @@ Cualquiera con esa clave puede administrar el catálogo — trátala como una
 contraseña (no la compartas por WhatsApp/correo sin cifrar, cámbiala si
 crees que se filtró).
 
-## Pagos con Mercado Pago (tarjeta + OXXO)
+## Pagos con Stripe (tarjeta + OXXO)
 
-El carrito paga de verdad, con Checkout Pro de Mercado Pago: tarjeta y pago
-en efectivo en OXXO. Sin las credenciales configuradas, el botón "Pagar con
+El carrito paga de verdad, con **Stripe Checkout**: tarjeta y pago en
+efectivo en OXXO. Sin las credenciales configuradas, el botón "Pagar con
 tarjeta o en OXXO" muestra un error claro en vez de fallar en silencio — así
 sabes exactamente qué falta.
-
-### 1. Crea tus credenciales de prueba
-
-1. Entra a [mercadopago.com.mx/developers/panel](https://www.mercadopago.com.mx/developers/panel)
-   con tu cuenta (o crea una — no necesitas tener el negocio verificado
-   todavía para probar en modo sandbox).
-2. Crea una aplicación ("Tus integraciones" → "Crear aplicación").
-3. Dentro de la aplicación, en **Credenciales de prueba**, copia el
-   **Access Token de prueba** (empieza con `TEST-...`) a
-   `MERCADOPAGO_ACCESS_TOKEN` en tu `.env`.
-
-### 2. Configura el secreto del webhook
-
-Dentro de la misma aplicación, ve a **Webhooks** → configura una URL (puede
-ser cualquier valor por ahora, se sobrescribe en cada pago porque el código
-manda la URL real dinámicamente) y copia la **clave secreta** que te dan ahí
-a `MERCADOPAGO_WEBHOOK_SECRET` en tu `.env`. Esa clave es la que usa el
-código para verificar que una notificación realmente viene de Mercado Pago
-y no de alguien más.
-
-### 3. Prueba los webhooks en tu máquina (necesitas una URL pública)
-
-A diferencia de correr todo en `localhost`, Mercado Pago sí necesita poder
-*llamarte a ti* para avisarte que un pago se completó — especialmente
-importante en OXXO, donde el pago pasa días después del checkout. Para eso
-necesitas exponer tu servidor local con [ngrok](https://ngrok.com/download):
-
-```bash
-ngrok http 3000
-```
-
-Copia la URL pública que te da (algo como `https://abc123.ngrok-free.app`)
-y **abre el sitio desde esa URL**, no desde `localhost:3000` — así, cuando
-pagues algo, el código arma automáticamente las URLs de vuelta y de webhook
-apuntando a esa dirección pública. Deja `ngrok http 3000` corriendo en una
-terminal aparte mientras pruebas pagos.
-
-### 4. Prueba un pago
-
-Con `npm run dev` y `ngrok` corriendo, agrega algo al carrito desde la URL
-de ngrok y dale "Pagar con tarjeta o en OXXO". Como usas un Access Token de
-prueba (`TEST-...`), Mercado Pago te manda automáticamente a su ambiente de
-sandbox — necesitas un **usuario de prueba comprador** para pagar ahí (se
-crea en el mismo panel de desarrolladores, en **Usuarios de prueba**; te da
-un correo y contraseña para iniciar sesión en el checkout).
-
-- **Tarjeta de prueba**: Mercado Pago publica números de tarjeta de prueba
-  por país en su documentación (busca "tarjetas de prueba México" en sus
-  docs) — usa el número junto con un nombre que incluya la palabra
-  `APRO` para que se apruebe automáticamente.
-- **OXXO de prueba**: se genera una ficha de prueba; puedes simular que se
-  pagó desde el mismo panel de desarrolladores (sección de simulación de
-  notificaciones/pagos).
-
-Verás el pedido reflejado en la colección `orders` de Firestore (consola de
-Firebase → Firestore Database) — pasa de `pending` a `paid` cuando el
-webhook confirma el pago.
-
-### 5. Para producción
-
-Repite los pasos con las **credenciales de producción** de la misma
-aplicación (dejan de empezar con `TEST-`), y configura el webhook de
-producción apuntando a `https://tudominio.com/api/webhooks/mercadopago`.
-
-## Pagos con Stripe (alternativa a Mercado Pago)
-
-El carrito también puede pagar con **Stripe Checkout** (tarjeta y OXXO),
-como segunda opción junto a Mercado Pago — el cliente elige cuál usar desde
-el carrito. Igual que con Mercado Pago, sin las credenciales configuradas el
-botón muestra un error claro en vez de fallar en silencio.
 
 ### 1. Crea tus llaves de prueba
 
@@ -210,26 +140,27 @@ botón muestra un error claro en vez de fallar en silencio.
 
 ### 2. Configura el secreto del webhook
 
-1. Con `npm run dev` y `ngrok` corriendo (ver sección de Mercado Pago arriba
-   si aún no lo tienes), instala el [Stripe CLI](https://docs.stripe.com/stripe-cli)
-   y corre:
+1. Instala el [Stripe CLI](https://docs.stripe.com/stripe-cli) y corre:
    ```bash
    stripe listen --forward-to localhost:3000/api/webhooks/stripe
    ```
 2. El comando imprime un secreto que empieza con `whsec_...` — cópialo a
    `STRIPE_WEBHOOK_SECRET` en tu `.env`. Deja `stripe listen` corriendo en
-   otra terminal mientras pruebas pagos (reemplaza temporalmente la
-   necesidad de ngrok solo para Stripe, ya que reenvía los eventos él mismo).
-3. Alternativa sin Stripe CLI: en el dashboard, **Desarrolladores →
-   Webhooks → Add endpoint**, con URL `https://tu-url-de-ngrok/api/webhooks/stripe`
-   y el evento `checkout.session.*` — copia el "Signing secret" que te
-   muestra ahí en vez del de `stripe listen`.
+   otra terminal mientras pruebas pagos — reenvía los eventos del webhook a
+   tu `localhost` él mismo, sin necesitar ngrok ni ninguna URL pública.
+3. Alternativa sin Stripe CLI: expón tu servidor con
+   [ngrok](https://ngrok.com/download) (`ngrok http 3000`) y en el
+   dashboard de Stripe, **Desarrolladores → Webhooks → Add endpoint**, con
+   URL `https://tu-url-de-ngrok/api/webhooks/stripe` y el evento
+   `checkout.session.*` — copia el "Signing secret" que te muestra ahí en
+   vez del de `stripe listen`.
 
 ### 3. Prueba un pago
 
-Agrega algo al carrito, elige **"Tarjeta (Stripe)"** como pasarela y dale
-pagar. Stripe siempre usa tarjetas/datos de prueba en modo de prueba, sin
-necesitar una cuenta de comprador aparte (a diferencia de Mercado Pago):
+Con `npm run dev` y `stripe listen` corriendo, agrega algo al carrito desde
+`localhost:3000` y dale "Pagar con tarjeta o en OXXO". Stripe siempre usa
+tarjetas/datos de prueba en modo de prueba, sin necesitar una cuenta de
+comprador aparte:
 
 - **Tarjeta de prueba**: `4242 4242 4242 4242`, cualquier fecha futura,
   cualquier CVC — se aprueba automáticamente. Stripe publica más números
@@ -239,14 +170,21 @@ necesitar una cuenta de comprador aparte (a diferencia de Mercado Pago):
   desde el dashboard de Stripe (Pagos → busca el pago → "Simular pago
   exitoso") o espera a que expire para simular el caso de no pago.
 
-Verás el pedido pasar de `pending` a `paid` en la colección `orders` de
-Firestore cuando el webhook confirme el pago, igual que con Mercado Pago.
+Verás el pedido reflejado en la colección `orders` de Firestore (consola de
+Firebase → Firestore Database) — pasa de `pending` a `paid` cuando el
+webhook confirma el pago.
 
 ### 4. Para producción
 
 Repite los pasos con el interruptor de **"Modo de prueba" desactivado**
 (llaves que empiezan con `sk_live_`), y configura el endpoint de webhook de
 producción apuntando a `https://tudominio.com/api/webhooks/stripe`.
+
+> **Nota:** el proyecto empezó usando Mercado Pago, pero su sandbox
+> rechazaba todo pago de prueba con "una de las partes... es de prueba" sin
+> importar la configuración de cuenta/navegador — confirmado que no era un
+> problema de este código (se verificó directo contra su API). Se migró a
+> Stripe, que sí funciona de punta a punta en pruebas.
 
 ## Publicar el sitio (Vercel)
 
@@ -257,7 +195,7 @@ producción apuntando a `https://tudominio.com/api/webhooks/stripe`.
    o la que estén usando).
 4. Antes de darle "Deploy", en **"Environment Variables"** agrega **todas**
    las variables que tienes en tu `.env` — las de Firebase (cliente y
-   admin), Mercado Pago, y `ADMIN_API_KEY`.
+   admin), Stripe, y `ADMIN_API_KEY`.
 5. Dale **"Deploy"**.
 
 Con Vercel conectado a GitHub, cada `git push` a la rama conectada
@@ -277,12 +215,12 @@ src/
     catalogo/page.tsx      # catálogo con filtro por categoría (?categoria=slug)
     admin/productos/page.tsx # panel simple para administrar productos
     pedido/
-      exito/page.tsx        # a donde Mercado Pago redirige tras un pago aprobado
+      exito/page.tsx        # a donde Stripe redirige tras un pago aprobado
       pendiente/page.tsx    # a donde redirige con una ficha OXXO sin pagar todavía
       cancelado/page.tsx    # a donde redirige si el pago se rechaza o cancela
     api/
-      checkout/route.ts                # crea la preferencia de Checkout Pro
-      webhooks/mercadopago/route.ts    # confirma pagos (tarjeta y OXXO)
+      checkout/stripe/route.ts     # crea la sesión de Stripe Checkout
+      webhooks/stripe/route.ts     # confirma pagos (tarjeta y OXXO)
       admin/products/route.ts          # listar/crear productos (protegido)
       admin/products/[id]/route.ts     # editar/borrar un producto (protegido)
 
@@ -300,9 +238,12 @@ src/
     products.ts          # lecturas de Firestore vía SDK de cliente
     types.ts               # tipos compartidos (Category, Product, ...)
     admin-auth.ts            # verifica la clave del panel de administración
-    mercadopago.ts             # config de Mercado Pago (lazy)
-    format.ts                    # formato de precios en MXN
-    constants.ts                   # nombre de tienda, WhatsApp, etc.
+    stripe.ts                  # config de Stripe (lazy)
+    checkout.ts                  # resuelve/valida el carrito contra Firestore
+    orders.ts                      # marca pedidos pagados/fallidos (idempotente)
+    http.ts                          # resuelve la URL pública real detrás de un proxy
+    format.ts                          # formato de precios en MXN
+    constants.ts                         # nombre de tienda, WhatsApp, etc.
 ```
 
 ## Decisiones y por qué
@@ -321,22 +262,21 @@ src/
   falla con un mensaje claro solo cuando algo realmente intenta usarla, en
   vez de tumbar `next build` completo o cualquier página que ni siquiera
   toca la base de datos.
-- **El pago es con Checkout Pro de Mercado Pago** (página de pago alojada
-  por Mercado Pago, no un formulario de tarjeta hecho a mano) — así el
-  proyecto nunca toca ni guarda datos de tarjetas, y Mercado Pago se encarga
-  de cumplir PCI-DSS. WhatsApp quedó solo como canal de dudas, no como forma
-  de pago.
+- **El pago es con Stripe Checkout** (página de pago alojada por Stripe, no
+  un formulario de tarjeta hecho a mano) — así el proyecto nunca toca ni
+  guarda datos de tarjetas, y Stripe se encarga de cumplir PCI-DSS.
+  WhatsApp quedó solo como canal de dudas, no como forma de pago.
 - **La confirmación del pago la hace el webhook, no la página de éxito.**
   Un cliente puede cerrar el navegador después de pagar y el pedido igual
-  se marca como pagado, porque Mercado Pago le avisa al servidor
-  directamente (firmado y verificado con `MERCADOPAGO_WEBHOOK_SECRET`).
-  Esto es obligatorio para OXXO: el cliente paga la ficha días después, en
-  la tienda, sin volver a abrir el sitio — el webhook es la única forma de
-  enterarnos de que sí pagó. El "marcar como pagado" usa una transacción de
-  Firestore para que, si Mercado Pago reintenta la notificación, el stock
-  nunca se descuente dos veces.
+  se marca como pagado, porque Stripe le avisa al servidor directamente
+  (firmado y verificado con `STRIPE_WEBHOOK_SECRET`). Esto es obligatorio
+  para OXXO: el cliente paga la ficha días después, en la tienda, sin
+  volver a abrir el sitio — el webhook es la única forma de enterarnos de
+  que sí pagó. El "marcar como pagado" (`src/lib/orders.ts`) usa una
+  transacción de Firestore para que, si Stripe reintenta la notificación,
+  el stock nunca se descuente dos veces.
 - **El precio de cada producto se vuelve a consultar en el servidor** al
-  crear la preferencia de pago (`/api/checkout`), nunca se confía en el
+  crear la sesión de pago (`/api/checkout/stripe`), nunca se confía en el
   precio que mande el navegador — evita que alguien manipule el precio
   antes de pagar.
 - **El panel de administración usa una sola clave compartida**
@@ -356,11 +296,7 @@ src/
    igual que se hizo con movilidad eléctrica (a `scripts/seed-firestore.ts`,
    o directo desde el panel `/admin/productos`) y se quita la bandera
    `comingSoon` de esa categoría.
-3. **Correos automáticos** — Mercado Pago ya manda un recibo de pago, pero
-   avisos propios de Movimax (confirmación de envío, etc.) no están hechos.
-4. **Publicar en Mercado Libre** — no es parte de este código (es un listado
-   de productos en su marketplace, no algo que se "programe" aquí), pero al
-   compartir la misma cuenta de Mercado Pago, los pagos de ambos canales
-   quedan en un solo lugar para conciliar.
-5. **Cuentas de cliente** (login, historial de pedidos) — no implementado
+3. **Correos automáticos** — Stripe ya manda un recibo de pago, pero avisos
+   propios de Movimax (confirmación de envío, etc.) no están hechos.
+4. **Cuentas de cliente** (login, historial de pedidos) — no implementado
    todavía, no era parte de este alcance inicial.

@@ -6,8 +6,7 @@ let cached: Stripe | null = null;
 // that never touch Stripe — the landing page, the catalog, the cart
 // preview — keep working even before STRIPE_SECRET_KEY is configured.
 // Only the checkout/webhook routes call this, and they fail with a clear
-// message instead of taking the whole app down. Mirrors getMercadoPagoConfig
-// in src/lib/mercadopago.ts.
+// message instead of taking the whole app down.
 export function getStripe(): Stripe {
   if (cached) return cached;
   const key = process.env.STRIPE_SECRET_KEY;
