@@ -23,16 +23,52 @@ function buildWhatsAppQuestionUrl(
   return `https://wa.me/${STORE_WHATSAPP}?text=${encodeURIComponent(message)}`;
 }
 
+type PaymentProvider = "mercadopago" | "stripe";
+
+const PAYMENT_PROVIDERS: {
+  id: PaymentProvider;
+  label: string;
+  endpoint: string;
+  connectingLabel: string;
+  // Temporarily off: Mercado Pago's own sandbox rejects every test payment
+  // with "una de las partes... es de prueba" regardless of account/browser
+  // setup (confirmed not our config — back_urls/collector are correct via
+  // their API). The checkout route and webhook are untouched and ready;
+  // flip this back to true once the sandbox bug is sorted or we're testing
+  // against production credentials.
+  enabled: boolean;
+}[] = [
+  {
+    id: "mercadopago",
+    label: "Mercado Pago",
+    endpoint: "/api/checkout",
+    connectingLabel: "Conectando con Mercado Pago…",
+    enabled: false,
+  },
+  {
+    id: "stripe",
+    label: "Tarjeta (Stripe)",
+    endpoint: "/api/checkout/stripe",
+    connectingLabel: "Conectando con Stripe…",
+    enabled: true,
+  },
+];
+
+const ENABLED_PROVIDERS = PAYMENT_PROVIDERS.filter((p) => p.enabled);
+
 export function CartDrawer() {
   const { items, isOpen, close, removeItem, setQuantity, subtotalCents } = useCart();
+  const [provider, setProvider] = useState<PaymentProvider>(ENABLED_PROVIDERS[0].id);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const selected = ENABLED_PROVIDERS.find((p) => p.id === provider) ?? ENABLED_PROVIDERS[0];
 
   async function handlePay() {
     setError(null);
     setIsRedirecting(true);
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch(selected.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -135,6 +171,27 @@ export function CartDrawer() {
               {formatPrice(subtotalCents)}
             </span>
           </div>
+          {ENABLED_PROVIDERS.length > 1 && (
+            <div role="radiogroup" aria-label="Pasarela de pago" className="mb-3 flex gap-2">
+              {ENABLED_PROVIDERS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={provider === p.id}
+                  onClick={() => setProvider(p.id)}
+                  disabled={isRedirecting}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                    provider === p.id
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line text-ink-muted hover:border-ink-muted"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             onClick={handlePay}
             disabled={items.length === 0 || isRedirecting}
@@ -145,11 +202,11 @@ export function CartDrawer() {
             }`}
           >
             <CardIcon className="h-4 w-4" />
-            {isRedirecting ? "Conectando con Mercado Pago…" : "Pagar con tarjeta o en OXXO"}
+            {isRedirecting ? selected.connectingLabel : "Pagar con tarjeta o en OXXO"}
           </button>
           {error && <p className="mt-2 text-center text-xs text-red-600">{error}</p>}
           <p className="mt-2 text-center text-xs text-ink-muted">
-            Pago seguro con Mercado Pago. Envío a todo México.
+            Pago seguro con {selected.label}. Envío a todo México.
           </p>
           <a
             href={items.length > 0 ? buildWhatsAppQuestionUrl(items, subtotalCents) : undefined}
