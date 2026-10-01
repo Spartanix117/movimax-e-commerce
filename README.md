@@ -191,6 +191,63 @@ Repite los pasos con las **credenciales de producción** de la misma
 aplicación (dejan de empezar con `TEST-`), y configura el webhook de
 producción apuntando a `https://tudominio.com/api/webhooks/mercadopago`.
 
+## Pagos con Stripe (alternativa a Mercado Pago)
+
+El carrito también puede pagar con **Stripe Checkout** (tarjeta y OXXO),
+como segunda opción junto a Mercado Pago — el cliente elige cuál usar desde
+el carrito. Igual que con Mercado Pago, sin las credenciales configuradas el
+botón muestra un error claro en vez de fallar en silencio.
+
+### 1. Crea tus llaves de prueba
+
+1. Entra a [dashboard.stripe.com/register](https://dashboard.stripe.com/register)
+   (o inicia sesión si ya tienes cuenta) — no necesitas activar cobros reales
+   para probar en modo de prueba.
+2. Con el interruptor **"Modo de prueba" / "Test mode"** activado (arriba a
+   la derecha del dashboard), ve a **Desarrolladores → Claves de API**.
+3. Copia la **Clave secreta** (empieza con `sk_test_...`) a
+   `STRIPE_SECRET_KEY` en tu `.env`.
+
+### 2. Configura el secreto del webhook
+
+1. Con `npm run dev` y `ngrok` corriendo (ver sección de Mercado Pago arriba
+   si aún no lo tienes), instala el [Stripe CLI](https://docs.stripe.com/stripe-cli)
+   y corre:
+   ```bash
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
+2. El comando imprime un secreto que empieza con `whsec_...` — cópialo a
+   `STRIPE_WEBHOOK_SECRET` en tu `.env`. Deja `stripe listen` corriendo en
+   otra terminal mientras pruebas pagos (reemplaza temporalmente la
+   necesidad de ngrok solo para Stripe, ya que reenvía los eventos él mismo).
+3. Alternativa sin Stripe CLI: en el dashboard, **Desarrolladores →
+   Webhooks → Add endpoint**, con URL `https://tu-url-de-ngrok/api/webhooks/stripe`
+   y el evento `checkout.session.*` — copia el "Signing secret" que te
+   muestra ahí en vez del de `stripe listen`.
+
+### 3. Prueba un pago
+
+Agrega algo al carrito, elige **"Tarjeta (Stripe)"** como pasarela y dale
+pagar. Stripe siempre usa tarjetas/datos de prueba en modo de prueba, sin
+necesitar una cuenta de comprador aparte (a diferencia de Mercado Pago):
+
+- **Tarjeta de prueba**: `4242 4242 4242 4242`, cualquier fecha futura,
+  cualquier CVC — se aprueba automáticamente. Stripe publica más números
+  para simular rechazos u otros casos (busca "tarjetas de prueba Stripe" en
+  su documentación).
+- **OXXO de prueba**: se genera una ficha de prueba; márcala como pagada
+  desde el dashboard de Stripe (Pagos → busca el pago → "Simular pago
+  exitoso") o espera a que expire para simular el caso de no pago.
+
+Verás el pedido pasar de `pending` a `paid` en la colección `orders` de
+Firestore cuando el webhook confirme el pago, igual que con Mercado Pago.
+
+### 4. Para producción
+
+Repite los pasos con el interruptor de **"Modo de prueba" desactivado**
+(llaves que empiezan con `sk_live_`), y configura el endpoint de webhook de
+producción apuntando a `https://tudominio.com/api/webhooks/stripe`.
+
 ## Publicar el sitio (Vercel)
 
 1. Entra a [vercel.com](https://vercel.com) y crea una cuenta — usa

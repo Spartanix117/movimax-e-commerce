@@ -1,46 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Payment, WebhookSignatureValidator } from "mercadopago";
-import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { getMercadoPagoConfig } from "@/lib/mercadopago";
-
-// Marks the order paid exactly once even if Mercado Pago retries the
-// notification, so stock is decremented only for the first successful update.
-async function markOrderPaid(orderId: string, mpPaymentId: string, paymentMethod?: string) {
-  const adminDb = getAdminDb();
-  const orderRef = adminDb.collection("orders").doc(orderId);
-  const transitioned = await adminDb.runTransaction(async (transaction) => {
-    const order = await transaction.get(orderRef);
-    if (!order.exists || order.data()?.status === "paid") return false;
-
-    transaction.update(orderRef, {
-      status: "paid",
-      mpPaymentId,
-      paymentMethod
-    });
-    return true;
-  });
-
-  if (!transitioned) return;
-
-  const order = await orderRef.get();
-  if (!order.exists) return;
-  const orderData = order.data();
-  if (!orderData) return;
-
-  for (const item of orderData.items) {
-    await adminDb.collection("products").doc(item.productId).update({
-      stock: FieldValue.increment(-item.quantity)
-    });
-  }
-}
-
-async function markOrderFailed(orderId: string, mpPaymentId: string) {
-  await getAdminDb().collection("orders").doc(orderId).update({
-    status: "failed",
-    mpPaymentId
-  });
-}
+import { getMercadoPagoConfig, describeMercadoPagoError } from "@/lib/mercadopago";
+import { markOrderPaid, markOrderFailed } from "@/lib/orders";
 
 export async function POST(req: NextRequest) {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
@@ -83,14 +45,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  const payment = await new Payment(mpConfig).get({ id: dataId });
+  let payment;
+  try {
+    payment = await new Payment(mpConfig).get({ id: dataId });
+  } catch (err) {
+    // A revoked/regenerated access token (or any other rejection from
+    // Mercado Pago) shouldn't 500 with no explanation — same clear error
+    // shape the checkout route already gives.
+    return NextResponse.json(
+      { error: `Mercado Pago rechazó la consulta del pago: ${describeMercadoPagoError(err)}` },
+      { status: 502 }
+    );
+  }
   const orderId = payment.external_reference;
   if (!orderId) return NextResponse.json({ received: true });
 
   if (payment.status === "approved") {
-    await markOrderPaid(orderId, String(payment.id), payment.payment_type_id);
+    await markOrderPaid(orderId, payment.payment_type_id, { mpPaymentId: String(payment.id) });
   } else if (payment.status === "rejected" || payment.status === "cancelled") {
-    await markOrderFailed(orderId, String(payment.id));
+    await markOrderFailed(orderId, { mpPaymentId: String(payment.id) });
   }
   // "pending" / "in_process" (e.g. an unpaid OXXO ticket) — leave as is,
   // we'll get another notification once it's actually paid.

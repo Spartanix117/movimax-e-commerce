@@ -1,30 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Preference, MercadoPagoError } from "mercadopago";
+import { Preference } from "mercadopago";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { getMercadoPagoConfig } from "@/lib/mercadopago";
-import type { Product } from "@/lib/types";
-
-// The SDK's own error message often falls back to the generic
-// "MercadoPago API error" when the response body carries no `message`/
-// `error` field — but `status` and `causes` (the real per-field validation
-// detail) are still there. Surface those instead of the generic string.
-function describeMercadoPagoError(err: unknown): string {
-  if (err instanceof MercadoPagoError) {
-    const causeText = err.causes
-      .map((c) => (typeof c === "object" && c && "description" in c ? c.description : c))
-      .join("; ");
-    return [
-      `HTTP ${err.status || "?"}`,
-      err.error || err.message,
-      causeText || null,
-    ]
-      .filter(Boolean)
-      .join(" — ");
-  }
-  return err instanceof Error ? err.message : "No se pudo crear la preferencia de pago.";
-}
-
-type CheckoutRequestItem = { productId: string; quantity: number };
+import { getMercadoPagoConfig, describeMercadoPagoError } from "@/lib/mercadopago";
+import { resolveLineItems, type CheckoutRequestItem } from "@/lib/checkout";
+import { getRequestOrigin } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
   let mpConfig;
@@ -48,27 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
   }
 
-  // Never trust prices/quantities from the client — look products up by id
-  // and price them from the database, same as any real payment integration.
-  const productsSnapshot = await adminDb.collection("products").where("isActive", "==", true).get();
-  const products = productsSnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Omit<Product, "id">),
-  }));
-
-  const lineItems = requested.flatMap((reqItem) => {
-    if (
-      typeof reqItem.productId !== "string" ||
-      !Number.isInteger(reqItem.quantity) ||
-      reqItem.quantity <= 0
-    ) {
-      return [];
-    }
-    const product = products.find((p) => p.id === reqItem.productId);
-    if (!product || product.stock <= 0) return [];
-    const quantity = Math.min(reqItem.quantity, product.stock);
-    return [{ product, quantity }];
-  });
+  const lineItems = await resolveLineItems(adminDb, requested);
 
   if (lineItems.length === 0) {
     return NextResponse.json(
@@ -78,12 +37,13 @@ export async function POST(req: NextRequest) {
   }
 
   const totalCents = lineItems.reduce((sum, i) => sum + i.product.priceCents * i.quantity, 0);
-  const origin = req.nextUrl.origin;
+  const origin = getRequestOrigin(req);
 
   // Recorded as "pending" now — the webhook is what actually confirms
   // payment, especially for an OXXO ticket that can be paid days later.
   const order = await adminDb.collection("orders").add({
     status: "pending",
+    provider: "mercadopago",
     totalCents,
     items: lineItems.map(({ product, quantity }) => ({
       productId: product.id,

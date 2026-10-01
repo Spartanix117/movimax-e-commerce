@@ -1,4 +1,4 @@
-import { MercadoPagoConfig } from "mercadopago";
+import { MercadoPagoConfig, MercadoPagoError } from "mercadopago";
 
 let cached: MercadoPagoConfig | null = null;
 
@@ -29,4 +29,26 @@ export function getMercadoPagoConfig(): MercadoPagoConfig {
   }
   cached = new MercadoPagoConfig({ accessToken });
   return cached;
+}
+
+// The SDK's own error message often falls back to the generic
+// "MercadoPago API error" when the response body carries no `message`/
+// `error` field — but `status` and `causes` (the real per-field validation
+// detail) are still there. Surface those instead of the generic string.
+// Shared by the checkout and webhook routes so both report a bad/expired
+// access token the same clear way instead of an opaque 500.
+export function describeMercadoPagoError(err: unknown): string {
+  if (err instanceof MercadoPagoError) {
+    const causeText = err.causes
+      .map((c) => (typeof c === "object" && c && "description" in c ? c.description : c))
+      .join("; ");
+    return [
+      `HTTP ${err.status || "?"}`,
+      err.error || err.message,
+      causeText || null,
+    ]
+      .filter(Boolean)
+      .join(" — ");
+  }
+  return err instanceof Error ? err.message : "Error desconocido de Mercado Pago.";
 }
