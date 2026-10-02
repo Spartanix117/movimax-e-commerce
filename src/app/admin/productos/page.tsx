@@ -133,7 +133,13 @@ export default function AdminProductosPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('¿Seguro que quieres borrar este producto?')) return
-    await fetch(`/api/admin/products/${id}`, { method: 'DELETE', headers: authHeaders() })
+    setError('')
+    const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE', headers: authHeaders() })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      setError(data?.error || 'No se pudo borrar. Intenta de nuevo.')
+      return
+    }
     loadAll()
   }
 
