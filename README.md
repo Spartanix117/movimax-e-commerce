@@ -142,8 +142,11 @@ sabes exactamente qué falta.
 
 1. Instala el [Stripe CLI](https://docs.stripe.com/stripe-cli) y corre:
    ```bash
-   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe --all-snapshot
    ```
+   (`--all-snapshot` es obligatorio en versiones recientes del CLI — sin
+   esa bandera, el comando falla con "must specify events to forward" y
+   no reenvía nada, aunque parezca que sí arrancó).
 2. El comando imprime un secreto que empieza con `whsec_...` — cópialo a
    `STRIPE_WEBHOOK_SECRET` en tu `.env`. Deja `stripe listen` corriendo en
    otra terminal mientras pruebas pagos — reenvía los eventos del webhook a
