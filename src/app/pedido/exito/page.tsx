@@ -3,6 +3,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { formatPrice } from "@/lib/format";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { getStripe } from "@/lib/stripe";
+
+type Order = { totalCents: number; status: string; stripeCheckoutSessionId?: string };
 
 export default async function PedidoExitoPage({
   searchParams,
@@ -14,22 +17,42 @@ export default async function PedidoExitoPage({
   // Best-effort: this is a "thank you" page, so a lookup failure (missing
   // credentials, doc not found) should never stop it from confirming the
   // payment the customer just completed — just skip showing the total.
-  let order: { totalCents: number; status: string } | null = null;
+  let order: Order | null = null;
   try {
     const orderSnap = external_reference
       ? await getAdminDb().collection("orders").doc(external_reference).get()
       : null;
-    order = orderSnap?.exists ? (orderSnap.data() as { totalCents: number; status: string }) : null;
+    order = orderSnap?.exists ? (orderSnap.data() as Order) : null;
   } catch {
     order = null;
   }
 
-  // Mercado Pago only sends the customer here once the payment is actually
-  // approved (it has its own /pedido/pendiente back_url for an unpaid OXXO
-  // ticket). Stripe has a single success_url for both card and OXXO, so an
-  // OXXO voucher lands here too, still "pending" — show that state instead
-  // of falsely confirming a payment that hasn't happened yet.
-  const isPending = order?.status === "pending";
+  // A "pending" order isn't necessarily an unpaid OXXO voucher — a card
+  // payment lands here "pending" too for the few seconds before the
+  // webhook catches up. Ask Stripe which payment method the customer
+  // actually used instead of assuming OXXO, so a card customer doesn't see
+  // a false "go pay at OXXO" message.
+  let isPendingOxxo = false;
+  let isPendingCard = false;
+  if (order?.status === "pending" && order.stripeCheckoutSessionId) {
+    try {
+      const session = await getStripe().checkout.sessions.retrieve(order.stripeCheckoutSessionId, {
+        expand: ["payment_intent.payment_method"],
+      });
+      const paymentIntent =
+        typeof session.payment_intent === "object" ? session.payment_intent : null;
+      const paymentMethod =
+        paymentIntent && typeof paymentIntent.payment_method === "object"
+          ? paymentIntent.payment_method
+          : null;
+      isPendingOxxo = paymentMethod?.type === "oxxo";
+      isPendingCard = !isPendingOxxo;
+    } catch {
+      // Stripe unreachable — fall through to the generic "confirming"
+      // message below instead of guessing OXXO.
+      isPendingCard = true;
+    }
+  }
 
   return (
     <>
@@ -37,18 +60,24 @@ export default async function PedidoExitoPage({
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center px-5 py-16 text-center sm:px-8">
         <span
           className={`flex h-14 w-14 items-center justify-center rounded-full ${
-            isPending ? "bg-purple-soft text-accent" : "bg-success-soft text-success"
+            isPendingOxxo || isPendingCard ? "bg-purple-soft text-accent" : "bg-success-soft text-success"
           }`}
         >
-          <span className="text-2xl">{isPending ? "🏪" : "✓"}</span>
+          <span className="text-2xl">{isPendingOxxo ? "🏪" : isPendingCard ? "⏳" : "✓"}</span>
         </span>
         <h1 className="mt-5 font-display text-3xl font-extrabold">
-          {isPending ? "Ficha OXXO generada" : "¡Pago confirmado!"}
+          {isPendingOxxo
+            ? "Ficha OXXO generada"
+            : isPendingCard
+              ? "Confirmando tu pago…"
+              : "¡Pago confirmado!"}
         </h1>
         <p className="mt-3 max-w-[46ch] text-ink-muted">
-          {isPending
+          {isPendingOxxo
             ? "Te enviamos por correo el comprobante para pagar en cualquier tienda OXXO. Tu pedido se confirma en cuanto se registre el pago."
-            : "Gracias por tu compra. Te enviamos la confirmación por correo y preparamos tu pedido para enviarlo."}
+            : isPendingCard
+              ? "Tu pago se está procesando — la confirmación debería llegar en unos segundos. Si después de un minuto sigue igual, contáctanos por WhatsApp."
+              : "Gracias por tu compra. Te enviamos la confirmación por correo y preparamos tu pedido para enviarlo."}
         </p>
 
         {order && (
