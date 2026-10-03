@@ -118,7 +118,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const snapshot = await getAdminDb().collection("products").get();
-    const products = snapshot.docs.map((doc) => doc.data());
+    // doc.data() alone omits the Firestore document id — the admin UI needs
+    // it (as React key, and as the id in PUT/DELETE /api/admin/products/[id])
+    // and no product field stores it, so it must come from doc.id here.
+    const products = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return NextResponse.json(products);
   } catch {
     return NextResponse.json({ error: "No se pudo obtener la lista de productos." }, { status: 500 });
