@@ -13,9 +13,10 @@ type Product = {
   stock: number
   spec: string
   description: string
+  imageUrl?: string
 }
 
-const emptyForm = { name: '', slug: '', categoryId: '', price: '', stock: '', spec: '', description: '' }
+const emptyForm = { name: '', slug: '', categoryId: '', price: '', stock: '', spec: '', description: '', imageUrl: '' }
 
 function slugify(text: string) {
   return text
@@ -36,10 +37,38 @@ export default function AdminProductosPage() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
   function authHeaders() {
     return { 'Content-Type': 'application/json', 'x-admin-key': adminKey }
+  }
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError('')
+    setUploading(true)
+
+    const body = new FormData()
+    body.append('file', file)
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: { 'x-admin-key': adminKey },
+      body,
+    })
+
+    setUploading(false)
+    e.target.value = ''
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      setError(data?.error || 'No se pudo subir la imagen.')
+      return
+    }
+
+    const { url } = await res.json()
+    setForm((f) => ({ ...f, imageUrl: url }))
   }
 
   async function loadAll() {
@@ -80,6 +109,7 @@ export default function AdminProductosPage() {
       stock: String(p.stock),
       spec: p.spec,
       description: p.description,
+      imageUrl: p.imageUrl ?? '',
     })
   }
 
@@ -107,6 +137,7 @@ export default function AdminProductosPage() {
       stock: Number(form.stock),
       spec: form.spec,
       description: form.description,
+      imageUrl: form.imageUrl,
     }
 
     setSaving(true)
@@ -209,6 +240,18 @@ export default function AdminProductosPage() {
           <textarea className="w-full border rounded-lg px-3 py-2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </div>
 
+        <div className="col-span-2">
+          <label className="block text-sm font-semibold mb-1">Foto del producto</label>
+          <div className="flex items-center gap-4">
+            {form.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- small admin-only preview, not worth next/image's config here
+              <img src={form.imageUrl} alt="" className="h-16 w-16 rounded-lg border object-cover" />
+            )}
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} disabled={uploading} className="text-sm" />
+            {uploading && <span className="text-sm text-gray-500">Subiendo...</span>}
+          </div>
+        </div>
+
         {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
 
         <div className="col-span-2 flex gap-3">
@@ -227,13 +270,21 @@ export default function AdminProductosPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-400 border-b">
-              <th className="py-2">Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th>
+              <th className="py-2"></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th>
             </tr>
           </thead>
           <tbody>
             {products.map((p) => (
               <tr key={p.id} className="border-b">
-                <td className="py-2">{p.name}</td>
+                <td className="py-2">
+                  {p.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- small admin-only thumbnail, not worth next/image's config here
+                    <img src={p.imageUrl} alt="" className="h-10 w-10 rounded-lg border object-cover" />
+                  ) : (
+                    <span className="block h-10 w-10 rounded-lg border bg-gray-50" />
+                  )}
+                </td>
+                <td>{p.name}</td>
                 <td>{categoryName(p.categoryId)}</td>
                 <td>${(p.priceCents / 100).toLocaleString('es-MX')}</td>
                 <td>{p.stock}</td>

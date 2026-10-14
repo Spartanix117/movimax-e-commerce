@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "El cuerpo de la solicitud no es JSON válido." }, { status: 400 });
   }
 
-  const { name, categoryId, priceCents, stock, spec, description } = body;
+  const { name, categoryId, priceCents, stock, spec, description, imageUrl } = body;
 
   if (!isNonEmptyString(name)) {
     return NextResponse.json({ error: "El nombre es obligatorio." }, { status: 400 });
@@ -39,6 +39,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const stockNumber = Number(stock);
   if (stock === "" || stock == null || !Number.isInteger(stockNumber) || stockNumber < 0) {
     return NextResponse.json({ error: "El stock debe ser un entero mayor o igual a 0." }, { status: 400 });
+  }
+  if (imageUrl != null && typeof imageUrl !== "string") {
+    return NextResponse.json({ error: "imageUrl debe ser texto." }, { status: 400 });
   }
 
   try {
@@ -57,6 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       stock: stockNumber,
       spec: typeof spec === "string" ? spec.trim() : "",
       description: typeof description === "string" ? description.trim() : "",
+      imageUrl: typeof imageUrl === "string" ? imageUrl.trim() : "",
     });
   } catch (err) {
     if ((err as { code?: number }).code === 5) {

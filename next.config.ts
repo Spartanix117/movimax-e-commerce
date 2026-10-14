@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   // default — needed here so testing through an ngrok tunnel (required for
   // Mercado Pago's webhook to reach us) doesn't break client interactivity.
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok-free.dev"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: "/v0/b/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
