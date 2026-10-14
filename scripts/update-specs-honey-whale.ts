@@ -65,6 +65,13 @@ const rows: Row[] = [
       "Velocidades: 40 km/h (hasta 100 km) · 60 km/h (hasta 75 km) · 80 km/h (hasta 60 km)\n" +
       "Soporte: 150 KG · Llantas: 110/70-12 Pulg · Material: Acero",
   },
+  {
+    // Confirmado: se queda en "Motos" (ya creado ahí como "Moto U3PRO"),
+    // no se mueve a Moto bicicletas aunque el PDF del catálogo lo agrupe ahí.
+    slug: "moto-u3pro",
+    spec: "Motor 400-650W, hasta 45 km/h, autonomía 60 km, batería 48V/20Ah",
+    description: "Motobici ligera y cómoda, ideal para cualquier viaje.\n\nSoporte: 150 KG · Llantas: D.8 T.14 Pulg · Material: Acero",
+  },
 ];
 
 async function main() {
