@@ -13,6 +13,12 @@ const RETIRED_PRODUCT_SLUGS = [
   "cargador-universal-patin-electrico",
   "camara-repuesto-rin-8-5",
   "candado-plegable-antirrobo",
+  // Productos de ejemplo usados mientras no había catálogo real — se
+  // retiran al empezar a cargar modelos reales (p.ej. Honey Whale).
+  "patin-electrico-movimax-x1",
+  "patin-electrico-movimax-x1-pro",
+  "bicicleta-electrica-movimax-urban",
+  "bicicleta-electrica-movimax-plegable",
 ];
 const RETIRED_CATEGORY_SLUGS = ["cascos-y-seguridad", "repuestos-y-accesorios"];
 
@@ -23,12 +29,8 @@ const categories = [
   { slug: "bicicletas-electricas", name: "Bicicletas eléctricas" },
 ];
 
-const products = [
-  { slug: "patin-electrico-movimax-x1", name: "Patín eléctrico Movimax X1", description: "Patín eléctrico plegable con motor de 350W, ideal para trayectos urbanos cortos. Incluye luces integradas y freno de disco.", spec: "Autonomía 25 km · hasta 25 km/h · plegable", priceCents: 499900, stock: 8, categoryId: "patines-electricos", isActive: true },
-  { slug: "patin-electrico-movimax-x1-pro", name: "Patín eléctrico Movimax X1 Pro", description: "Versión Pro con batería de mayor capacidad y suspensión doble para calles irregulares.", spec: "Autonomía 40 km · hasta 32 km/h · suspensión doble", priceCents: 749900, stock: 5, categoryId: "patines-electricos", isActive: true },
-  { slug: "bicicleta-electrica-movimax-urban", name: "Bicicleta eléctrica Movimax Urban", description: "Bicicleta eléctrica con motor de buje trasero de 250W y batería removible, pensada para ciudad.", spec: "Autonomía 50 km · motor 250W · batería removible", priceCents: 1299900, stock: 4, categoryId: "bicicletas-electricas", isActive: true },
-  { slug: "bicicleta-electrica-movimax-plegable", name: "Bicicleta eléctrica Movimax Plegable", description: "Bicicleta eléctrica plegable, fácil de guardar en el clóset o cajuela del auto.", spec: "Autonomía 35 km · rines 16\" · plegable en 10s", priceCents: 1099900, stock: 6, categoryId: "bicicletas-electricas", isActive: true },
-];
+// Los productos reales se cargan desde /admin/productos — este seed ya
+// solo mantiene las categorías y limpia los de ejemplo (arriba).
 
 async function main() {
   const cleanupBatch = adminDb.batch();
@@ -46,13 +48,7 @@ async function main() {
   }
   await catBatch.commit();
 
-  const prodBatch = adminDb.batch();
-  for (const product of products) {
-    prodBatch.set(adminDb.collection("products").doc(product.slug), product);
-  }
-  await prodBatch.commit();
-
-  console.log(`Seed listo: ${products.length} productos en ${categories.length} categorías.`);
+  console.log(`Seed listo: ${categories.length} categorías (productos se administran en /admin/productos).`);
 }
 
 main().catch((e) => {
