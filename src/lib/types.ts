@@ -15,6 +15,7 @@ export type Product = {
     stock: number
     categoryId: string
     isActive?: boolean
+    imageUrl?: string
 }
 
 export type ProductWithCategory = Product & { category: Category }

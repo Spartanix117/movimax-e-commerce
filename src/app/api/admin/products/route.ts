@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "El cuerpo de la solicitud no es JSON válido." }, { status: 400 });
   }
 
-  const { name, slug, categoryId, priceCents, stock, spec, description } = body;
+  const { name, slug, categoryId, priceCents, stock, spec, description, imageUrl } = body;
 
   if (!isNonEmptyString(name)) {
     return NextResponse.json({ error: "El nombre es obligatorio." }, { status: 400 });
@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
   if ((spec != null && typeof spec !== "string") || (description != null && typeof description !== "string")) {
     return NextResponse.json({ error: "spec y description deben ser texto." }, { status: 400 });
   }
+  if (imageUrl != null && typeof imageUrl !== "string") {
+    return NextResponse.json({ error: "imageUrl debe ser texto." }, { status: 400 });
+  }
 
   try {
     const category = await adminDb.collection("categories").doc(categoryId).get();
@@ -95,6 +98,7 @@ export async function POST(req: NextRequest) {
         stock: stockNumber,
         spec: spec?.trim() || "",
         description: description?.trim() || "",
+        imageUrl: imageUrl?.trim() || "",
         isActive: true,
       });
   } catch (err) {

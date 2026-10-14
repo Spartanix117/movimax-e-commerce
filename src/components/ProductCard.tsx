@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ProductWithCategory } from "@/lib/types";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { formatPrice } from "@/lib/format";
@@ -18,8 +19,18 @@ export function ProductCard({
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-line bg-paper-raised shadow-sm">
-      <div className="flex aspect-[4/3] items-center justify-center border-b border-line bg-[radial-gradient(120%_140%_at_15%_0%,color-mix(in_srgb,var(--accent)_16%,transparent),transparent_60%)] bg-paper text-ink-muted">
-        <Icon className="h-12 w-12" />
+      <div className="relative flex aspect-[4/3] items-center justify-center border-b border-line bg-[radial-gradient(120%_140%_at_15%_0%,color-mix(in_srgb,var(--accent)_16%,transparent),transparent_60%)] bg-paper text-ink-muted">
+        {product.imageUrl ? (
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            className="object-contain p-3"
+            sizes="(min-width: 1024px) 25vw, 50vw"
+          />
+        ) : (
+          <Icon className="h-12 w-12" />
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-accent">

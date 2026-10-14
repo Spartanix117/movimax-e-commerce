@@ -1,7 +1,9 @@
-import { initializeApp, getApps, getApp, cert, type ServiceAccount } from "firebase-admin/app";
+import { initializeApp, getApps, getApp, cert, type App, type ServiceAccount } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 let cached: Firestore | null = null;
+let cachedApp: App | null = null;
 
 function loadServiceAccount(): ServiceAccount {
   // Preferred: the whole service-account JSON, base64-encoded into one
@@ -69,12 +71,33 @@ function loadServiceAccount(): ServiceAccount {
 // down — Next.js evaluates API route modules while collecting build
 // metadata, before any request ever calls the handler, so a top-level throw
 // here would fail `next build` itself.
+function getAdminApp(): App {
+  if (cachedApp) return cachedApp;
+
+  const serviceAccount = loadServiceAccount();
+  cachedApp = getApps().length
+    ? getApp()
+    : initializeApp({
+        credential: cert(serviceAccount),
+        // Needed so getAdminBucket() below can resolve the default bucket
+        // without every caller having to pass its name explicitly.
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      });
+  return cachedApp;
+}
+
 export function getAdminDb(): Firestore {
   if (cached) return cached;
 
-  const serviceAccount = loadServiceAccount();
-  const adminApp = getApps().length ? getApp() : initializeApp({ credential: cert(serviceAccount) });
-
-  cached = getFirestore(adminApp);
+  cached = getFirestore(getAdminApp());
   return cached;
+}
+
+export function getAdminBucket() {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+    throw new Error(
+      "Falta NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET en .env — revisa la consola de Firebase > Storage."
+    );
+  }
+  return getStorage(getAdminApp()).bucket();
 }

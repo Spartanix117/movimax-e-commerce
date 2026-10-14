@@ -121,6 +121,17 @@ Cualquiera con esa clave puede administrar el catálogo — trátala como una
 contraseña (no la compartas por WhatsApp/correo sin cifrar, cámbiala si
 crees que se filtró).
 
+**Fotos de producto**: en el formulario de `/admin/productos` hay un campo
+para subir una imagen (JPG/PNG/WEBP, máx. 5 MB) — se sube a Firebase Storage
+desde `/api/admin/upload` y la URL se guarda en el campo `imageUrl` del
+producto. Requiere que el proyecto de Firebase tenga **Storage** habilitado
+(consola de Firebase > Storage > Comenzar) y que `.env` tenga
+`NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` (ver sección de Firebase arriba). No
+hace falta abrir las reglas de Storage para lectura pública: cada imagen se
+sirve con un token de descarga propio (el mismo mecanismo que usa
+`getDownloadURL()` del SDK de cliente), así que solo esa imagen es
+accesible, no todo el bucket.
+
 ## Pagos con Stripe (tarjeta + OXXO)
 
 El carrito paga de verdad, con **Stripe Checkout**: tarjeta y pago en
