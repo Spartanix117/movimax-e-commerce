@@ -30,6 +30,14 @@ const rows: { slug: string; file: string }[] = [
   { slug: "patin-e9max-n", file: "patin-e9max-n.png" },
   { slug: "patin-s5", file: "patin-s5.png" },
   { slug: "patin-m4", file: "patin-m4.png" },
+  { slug: "patin-c1pro", file: "patin-c1pro.png" },
+  { slug: "patin-t1", file: "patin-t1.png" },
+  { slug: "patin-h10", file: "patin-h10.png" },
+  { slug: "patin-m5pro", file: "patin-m5pro.png" },
+  { slug: "patin-t4a", file: "patin-t4a.png" },
+  { slug: "patin-h3", file: "patin-h3.png" },
+  { slug: "patin-t4d", file: "patin-t4d.png" },
+  { slug: "patin-t4bn", file: "patin-t4bn.png" },
 ];
 
 async function main() {

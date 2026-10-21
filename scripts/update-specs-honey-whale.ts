@@ -317,9 +317,12 @@ const rows: Row[] = [
     description: "Versión extrema con mayor capacidad de aceleración y respuesta frenado\n\nSoporte: 150 KG · Llantas: 10 Pulg · Material: Aluminio",
   },
   {
+    // Corregido con la ficha real del catálogo (p. 18) — el JSON traía
+    // specs y hasta descripción distintas (no mencionaba asiento/cajuela,
+    // que sí trae la foto real).
     slug: "patin-h3",
-    spec: "Motor 1000W, hasta 50 km/h, autonomía 50 km, batería 48V/18Ah",
-    description: "Scooter de gama alta con iluminación surround y pantalla LCD inteligente\n\nSoporte: 150 KG · Llantas: 10 Pulg · Material: Aluminio",
+    spec: "Motor 800-1000W, hasta 55 km/h, autonomía 60 km, batería 48V/15Ah",
+    description: "Rígido pero cómodo, con un asiento acolchonado y una mini cajuela práctica. Su buena velocidad lo hace ideal para llegar a cualquier destino.\n\nSoporte: 120 KG · Llantas: D.11 T.10 Pulg · Material: Aluminio",
   },
   {
     slug: "patin-h4",
@@ -377,9 +380,10 @@ const rows: Row[] = [
     description: "Modelo urbano robusto con excelente estabilidad a alta velocidad\n\nSoporte: 140 KG · Llantas: 10 Pulg · Material: Aluminio",
   },
   {
+    // Corregido con la ficha real del catálogo (p. 18).
     slug: "patin-t4a",
-    spec: "Motor 600W, hasta 40 km/h, autonomía 35 km, batería 48V/12.5Ah",
-    description: "Diseño todoterreno inicial con doble suspensión\n\nSoporte: 130 KG · Llantas: 10 Pulg · Material: Aluminio",
+    spec: "Motor 600-750W, hasta 45 km/h, autonomía 35 km, batería 48V/10Ah",
+    description: "Con excelente amortiguación y velocidad de hasta 45 km/h, es ideal para moverse rápido.\n\nSoporte: 120 KG · Llantas: 10 Pulg · Material: Aluminio",
   },
   {
     slug: "patin-t4b",
