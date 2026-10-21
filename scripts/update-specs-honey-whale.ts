@@ -250,9 +250,11 @@ const rows: Row[] = [
     description: "Autonomía extendida con amortiguador traseros y delanteros\n\nSoporte: 120 KG · Llantas: 10 Pulg · Material: Aluminio",
   },
   {
+    // Corregido con la ficha real del catálogo (p. 11): "MODELO M2 PRO / e9 pro"
+    // — el JSON traía valores ligeramente distintos (30 km/h, 7.5Ah).
     slug: "patin-e9pro-m2",
-    spec: "Motor 350W, hasta 30 km/h, autonomía 22 km, batería 36V/7.5Ah",
-    description: "Scooter urbano compacto con suspensión y diseño de respuesta rápida\n\nSoporte: 120 KG · Llantas: 8.5 Pulg · Material: Aluminio",
+    spec: "Motor 350-500W, hasta 32 km/h, autonomía 22 km, batería 36V/7.8Ah",
+    description: "Ideal para trayectos cortos en la ciudad, ligero, fácil de transportar y disponible en varios colores.\n\nSoporte: 120 KG · Llantas: 8.5 Pulg · Material: Aluminio",
   },
   {
     slug: "patin-e9t",
