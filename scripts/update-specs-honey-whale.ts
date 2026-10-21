@@ -416,9 +416,10 @@ const rows: Row[] = [
     description: "Motorización superior para usuarios que requieren gran torque\n\nSoporte: 150 KG · Llantas: 10 Pulg · Material: Aluminio",
   },
   {
+    // Corregido con la ficha real del catálogo (p. 22).
     slug: "patin-t8max",
-    spec: "Motor 2x1200W, hasta 65 km/h, autonomía 65 km, batería 60V/24Ah",
-    description: "Autonomía sobresaliente para trayectos largos sin recarga intermedia\n\nSoporte: 150 KG · Llantas: 11 Pulg · Material: Aluminio",
+    spec: "Motor 800-1000W, hasta 65 km/h, autonomía 65 km, batería 52V/20Ah",
+    description: "Equipo con buena velocidad y autonomía, diseño moderno y amortiguadores que garantizan comodidad en cada viaje.\n\nSoporte: 120 KG · Llantas: 12 Pulg · Material: Metal",
   },
   {
     slug: "trimoto-h21",
