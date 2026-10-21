@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:seed": "tsx --env-file-if-exists=.env scripts/seed-firestore.ts",
     "import:precios": "tsx --env-file-if-exists=.env scripts/import-honey-whale-precios.ts",
-    "update:specs": "tsx --env-file-if-exists=.env scripts/update-specs-honey-whale.ts"
+    "update:specs": "tsx --env-file-if-exists=.env scripts/update-specs-honey-whale.ts",
+    "upload:imagenes": "tsx --env-file-if-exists=.env scripts/upload-images-honey-whale.ts"
   },
   "dependencies": {
     "firebase": "^12.19.0",
