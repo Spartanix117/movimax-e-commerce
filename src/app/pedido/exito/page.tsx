@@ -86,6 +86,15 @@ export default async function PedidoExitoPage({
           </p>
         )}
 
+        {external_reference && (
+          <p className="mt-3 text-sm text-ink-muted">
+            Número de pedido:{" "}
+            <span className="font-mono font-semibold text-ink">{external_reference}</span>
+            <br />
+            Guárdalo para rastrear tu pedido más adelante.
+          </p>
+        )}
+
         <Link
           href="/catalogo"
           className="mt-8 rounded-xl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:brightness-110"

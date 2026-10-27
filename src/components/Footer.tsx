@@ -48,8 +48,8 @@ export function Footer() {
           <h4 className="mb-3.5 text-xs font-bold uppercase tracking-wider text-gold">Tienda</h4>
           <ul className="flex flex-col gap-2.5 text-sm">
             <li><Link href="/catalogo" className="hover:text-gold">Catálogo completo</Link></li>
-            <li><Link href="/#" className="hover:text-gold">Rastrear pedido</Link></li>
-            <li><Link href="/#" className="hover:text-gold">Garantía</Link></li>
+            <li><Link href="/rastreo" className="hover:text-gold">Rastrear pedido</Link></li>
+            <li><Link href="/garantia" className="hover:text-gold">Garantía</Link></li>
             <li><Link href="/#" className="hover:text-gold">Preguntas frecuentes</Link></li>
           </ul>
         </div>

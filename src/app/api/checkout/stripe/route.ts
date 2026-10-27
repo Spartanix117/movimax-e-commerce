@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { getStripe, describeStripeError } from "@/lib/stripe";
 import { resolveLineItems, type CheckoutRequestItem } from "@/lib/checkout";
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
       priceCents: product.priceCents,
       quantity,
     })),
+    createdAt: FieldValue.serverTimestamp(),
   });
 
   try {

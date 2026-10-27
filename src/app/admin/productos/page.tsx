@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { getCategories } from '@/lib/products'
 import type { Category } from '@/lib/types'
 
@@ -198,7 +199,12 @@ export default function AdminProductosPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-8 py-10">
-      <h1 className="text-3xl font-bold mb-8">Administrar productos</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Administrar productos</h1>
+        <Link href="/admin/pedidos" className="text-sm font-semibold text-blue-600">
+          Ir a Pedidos →
+        </Link>
+      </div>
 
       <form onSubmit={handleSubmit} className="border rounded-xl p-6 mb-10 grid grid-cols-2 gap-4">
         <div className="col-span-2">

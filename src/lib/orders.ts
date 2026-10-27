@@ -21,6 +21,7 @@ export async function markOrderPaid(
     transaction.update(orderRef, {
       status: "paid",
       paymentMethod,
+      fulfillmentStatus: "preparando",
       ...extraFields,
     });
     return true;
