@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { getCategories } from '@/lib/products'
 import type { Category } from '@/lib/types'
+import { AdminNav } from '@/components/admin/AdminNav'
 
 type Product = {
   id: string
@@ -22,10 +22,14 @@ const emptyForm = { name: '', slug: '', categoryId: '', price: '', stock: '', sp
 function slugify(text: string) {
   return text
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 }
+
+const inputClass =
+  'w-full rounded-xl border border-line bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20'
+const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-muted'
 
 export default function AdminProductosPage() {
   const [adminKey, setAdminKey] = useState('')
@@ -179,17 +183,26 @@ export default function AdminProductosPage() {
 
   if (!unlocked) {
     return (
-      <main className="max-w-sm mx-auto px-8 py-20">
-        <h1 className="text-2xl font-bold mb-6">Acceso de administrador</h1>
-        <form onSubmit={handleUnlock}>
-          <label className="block text-sm font-semibold mb-1">Clave de administrador</label>
+      <main className="flex min-h-screen items-center justify-center bg-paper px-5">
+        <form
+          onSubmit={handleUnlock}
+          className="w-full max-w-sm rounded-2xl border border-line bg-paper-raised p-7 shadow-sm"
+        >
+          <span className="font-mono text-xs font-medium uppercase tracking-[0.14em] text-ink-muted">
+            Movimax Admin
+          </span>
+          <h1 className="mt-1.5 font-display text-2xl font-extrabold text-ink">Acceso de administrador</h1>
+          <label className={`${labelClass} mt-6`}>Clave de administrador</label>
           <input
             type="password"
-            className="w-full border rounded-lg px-3 py-2 mb-4"
+            className={inputClass}
             value={keyInput}
             onChange={(e) => setKeyInput(e.target.value)}
           />
-          <button type="submit" className="bg-black text-white px-5 py-2 rounded-lg font-semibold w-full">
+          <button
+            type="submit"
+            className="mt-5 w-full rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+          >
             Entrar
           </button>
         </form>
@@ -198,111 +211,154 @@ export default function AdminProductosPage() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-8 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Administrar productos</h1>
-        <Link href="/admin/pedidos" className="text-sm font-semibold text-blue-600">
-          Ir a Pedidos →
-        </Link>
-      </div>
+    <div className="min-h-screen bg-paper">
+      <AdminNav />
+      <main className="mx-auto max-w-5xl px-6 py-10 sm:px-8">
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.14em] text-ink-muted">
+          Catálogo
+        </span>
+        <h1 className="mt-1.5 font-display text-3xl font-extrabold text-ink">Administrar productos</h1>
 
-      <form onSubmit={handleSubmit} className="border rounded-xl p-6 mb-10 grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <label className="block text-sm font-semibold mb-1">Nombre</label>
-          <input className="w-full border rounded-lg px-3 py-2" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </div>
-
-        <div className="col-span-2">
-          <label className="block text-sm font-semibold mb-1">Slug (URL) <span className="text-gray-400 font-normal">— se genera solo si lo dejas vacío</span></label>
-          <input className="w-full border rounded-lg px-3 py-2" placeholder={form.name ? slugify(form.name) : ''} value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} disabled={!!editingId} />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-1">Categoría</label>
-          <select className="w-full border rounded-lg px-3 py-2" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}{c.comingSoon ? ' (próximamente)' : ''}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-1">Precio (MXN)</label>
-          <input type="number" step="0.01" className="w-full border rounded-lg px-3 py-2" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-1">Stock</label>
-          <input type="number" className="w-full border rounded-lg px-3 py-2" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-1">Spec corta</label>
-          <input className="w-full border rounded-lg px-3 py-2" value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} />
-        </div>
-
-        <div className="col-span-2">
-          <label className="block text-sm font-semibold mb-1">Descripción</label>
-          <textarea className="w-full border rounded-lg px-3 py-2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </div>
-
-        <div className="col-span-2">
-          <label className="block text-sm font-semibold mb-1">Foto del producto</label>
-          <div className="flex items-center gap-4">
-            {form.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element -- small admin-only preview, not worth next/image's config here
-              <img src={form.imageUrl} alt="" className="h-16 w-16 rounded-lg border object-cover" />
-            )}
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} disabled={uploading} className="text-sm" />
-            {uploading && <span className="text-sm text-gray-500">Subiendo...</span>}
+        <form
+          onSubmit={handleSubmit}
+          className="mt-7 grid grid-cols-2 gap-4 rounded-2xl border border-line bg-paper-raised p-6 shadow-sm"
+        >
+          <div className="col-span-2">
+            <label className={labelClass}>Nombre</label>
+            <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
-        </div>
 
-        {error && <p className="col-span-2 text-red-600 text-sm">{error}</p>}
+          <div className="col-span-2">
+            <label className={labelClass}>
+              Slug (URL) <span className="font-normal normal-case text-ink-muted">— se genera solo si lo dejas vacío</span>
+            </label>
+            <input
+              className={inputClass}
+              placeholder={form.name ? slugify(form.name) : ''}
+              value={form.slug}
+              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              disabled={!!editingId}
+            />
+          </div>
 
-        <div className="col-span-2 flex gap-3">
-          <button type="submit" disabled={saving} className="bg-black text-white px-5 py-2 rounded-lg font-semibold disabled:opacity-50">
-            {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Agregar producto'}
-          </button>
-          {editingId && <button type="button" onClick={cancelEdit} className="px-5 py-2 rounded-lg border">Cancelar</button>}
-        </div>
-      </form>
+          <div>
+            <label className={labelClass}>Categoría</label>
+            <select className={inputClass} value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}{c.comingSoon ? ' (próximamente)' : ''}</option>
+              ))}
+            </select>
+          </div>
 
-      <h2 className="text-xl font-bold mb-4">Productos ({products.length})</h2>
+          <div>
+            <label className={labelClass}>Precio (MXN)</label>
+            <input type="number" step="0.01" className={inputClass} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+          </div>
 
-      {loading ? (
-        <p className="text-gray-500">Cargando...</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-400 border-b">
-              <th className="py-2"></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-b">
-                <td className="py-2">
-                  {p.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- small admin-only thumbnail, not worth next/image's config here
-                    <img src={p.imageUrl} alt="" className="h-10 w-10 rounded-lg border object-cover" />
-                  ) : (
-                    <span className="block h-10 w-10 rounded-lg border bg-gray-50" />
-                  )}
-                </td>
-                <td>{p.name}</td>
-                <td>{categoryName(p.categoryId)}</td>
-                <td>${(p.priceCents / 100).toLocaleString('es-MX')}</td>
-                <td>{p.stock}</td>
-                <td className="text-right space-x-3">
-                  <button onClick={() => startEdit(p)} className="text-blue-600 font-semibold">Editar</button>
-                  <button onClick={() => handleDelete(p.id)} className="text-red-600 font-semibold">Borrar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+          <div>
+            <label className={labelClass}>Stock</label>
+            <input type="number" className={inputClass} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+          </div>
+
+          <div>
+            <label className={labelClass}>Spec corta</label>
+            <input className={inputClass} value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} />
+          </div>
+
+          <div className="col-span-2">
+            <label className={labelClass}>Descripción</label>
+            <textarea className={`${inputClass} min-h-[88px]`} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          </div>
+
+          <div className="col-span-2">
+            <label className={labelClass}>Foto del producto</label>
+            <div className="flex items-center gap-4">
+              {form.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- small admin-only preview, not worth next/image's config here
+                <img src={form.imageUrl} alt="" className="h-16 w-16 rounded-xl border border-line object-cover" />
+              ) : (
+                <span className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-line text-[10px] text-ink-muted">
+                  Sin foto
+                </span>
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageSelect}
+                disabled={uploading}
+                className="text-sm text-ink-muted file:mr-3 file:rounded-lg file:border-0 file:bg-purple-soft file:px-3 file:py-2 file:text-xs file:font-semibold file:text-accent"
+              />
+              {uploading && <span className="text-sm text-ink-muted">Subiendo...</span>}
+            </div>
+          </div>
+
+          {error && <p className="col-span-2 text-sm font-medium text-red-600">{error}</p>}
+
+          <div className="col-span-2 flex gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+            >
+              {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Agregar producto'}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-ink-muted"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+
+        <h2 className="mt-10 mb-4 font-display text-xl font-bold text-ink">
+          Productos <span className="text-ink-muted">({products.length})</span>
+        </h2>
+
+        {loading ? (
+          <p className="text-ink-muted">Cargando...</p>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-line bg-paper-raised shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  <th className="py-3 pl-5"></th>
+                  <th>Nombre</th>
+                  <th>Categoría</th>
+                  <th>Precio</th>
+                  <th>Stock</th>
+                  <th className="pr-5"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.id} className="border-b border-line last:border-0 hover:bg-paper">
+                    <td className="py-2.5 pl-5">
+                      {p.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- small admin-only thumbnail, not worth next/image's config here
+                        <img src={p.imageUrl} alt="" className="h-10 w-10 rounded-lg border border-line object-cover" />
+                      ) : (
+                        <span className="block h-10 w-10 rounded-lg border border-line bg-paper" />
+                      )}
+                    </td>
+                    <td className="font-medium text-ink">{p.name}</td>
+                    <td className="text-ink-muted">{categoryName(p.categoryId)}</td>
+                    <td className="font-mono text-ink">${(p.priceCents / 100).toLocaleString('es-MX')}</td>
+                    <td className={p.stock > 0 ? 'text-success' : 'text-ink-muted'}>{p.stock}</td>
+                    <td className="space-x-4 py-2.5 pr-5 text-right">
+                      <button onClick={() => startEdit(p)} className="font-semibold text-accent hover:underline">Editar</button>
+                      <button onClick={() => handleDelete(p.id)} className="font-semibold text-red-600 hover:underline">Borrar</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
